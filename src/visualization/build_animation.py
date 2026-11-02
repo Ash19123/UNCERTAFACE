@@ -25,7 +25,7 @@ from ..data import dataset as ds
 from ..data import mesh_utils as mu
 from ..data import pointcloud as pc
 from ..data import preprocessing as pp
-from ..uncertainty.estimation import gaussian_to_mm
+from ..evaluation.predict import predict_cloud
 from .results import load_run
 
 REVEAL_AXES = {"front": (0.0, 1.0, 0.0), "top": (0.0, 0.0, 1.0), "left": (-1.0, 0.0, 0.0)}
@@ -51,16 +51,9 @@ def nested_observations(verts, faces, axis, missing_fractions, n_points, rng, no
     return out
 
 
-@torch.no_grad()
 def predict_points(model, norm, points_mm, missing_fraction, n_points, knn_k=8, device="cpu"):
     """Model prediction (mm) from a raw point cloud, via the same path as the dataset."""
-    p, mask = pp.to_fixed_size(norm.forward(points_mm).astype(np.float32), n_points, np.random.default_rng(0))
-    nn = pp.knn_indices(p, min(knn_k, int(mask.sum())), mask)
-    kd = np.linalg.norm(p[nn] - p[:, None], axis=-1).mean(1, keepdims=True).astype(np.float32)
-    kd[~mask] = 0
-    t = lambda x: torch.from_numpy(x)[None].to(device)
-    out = model(t(p), t(mask), t(kd), torch.tensor([missing_fraction], dtype=torch.float32, device=device))
-    return gaussian_to_mm(out["mean"].float(), None if out["logvar"] is None else out["logvar"].float(), norm)
+    return predict_cloud(model, norm, points_mm, missing_fraction, knn_k, device, n_points)
 
 
 def build(run_dir, out_html, split="validation", sample=0, reveal="front", device="cpu",

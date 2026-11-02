@@ -23,6 +23,29 @@ FACE_LATENTS = ("thickness_scale", "thickness_field_amp", "nose_projection", "li
                 "cheek_fat", "unobserved_field_amp", "thickness_field_seed", "unobserved_field_seed")
 
 
+def main() -> None:
+    """Compute the floor on the validation skulls and save ``reports/oracle_floor.json``."""
+    import json
+    from pathlib import Path
+
+    import yaml
+    cfg = yaml.safe_load(Path("configs/dataset.yaml").read_text())["generator"]
+    root = Path("UNCERTAFACE_DATA")
+    ids = json.loads((root / "splits/validation.json").read_text())["base_ids"]
+    params = [json.loads((root / f"raw/generated/paired_samples/B{b:04d}.json").read_text())["generator_params"] for b in ids]
+    o = oracle_variance(params, cfg, n_draws=150, seed=1)
+    s = o["pos_std_mm"]
+    out = dict(floor_rmse_mm=o["floor_rmse_mm"], n_skulls=len(ids), n_draws=150, split="validation",
+               oracle_pos_std_mm=dict(mean=float(s.mean()), min=float(s.min()), max=float(s.max()),
+                                      std_across_subjects_at_vertex=float(s.std(0).mean()),
+                                      std_across_vertices=float(s.mean(0).std())),
+               per_vertex_mean_pos_std_mm=s.mean(0).tolist(),
+               note="synthetic-generator property; complete noise-free skull; not a statement about real anatomy")
+    Path("reports").mkdir(exist_ok=True)
+    Path("reports/oracle_floor.json").write_text(json.dumps(out, indent=2))
+    print(json.dumps({k: out[k] for k in ("floor_rmse_mm", "oracle_pos_std_mm")}, indent=2))
+
+
 def oracle_variance(base_params: list[dict], cfg: dict, n_draws: int = 200, seed: int = 0,
                     subdivisions: int = 4) -> dict:
     """Monte-Carlo per-vertex 3D variance of the face given the skull, over face latents.
@@ -44,3 +67,7 @@ def oracle_variance(base_params: list[dict], cfg: dict, n_draws: int = 200, seed
     var = np.stack(out)
     return dict(var=var, floor_rmse_mm=float(np.sqrt(var.sum(-1).mean())),
                 pos_std_mm=np.sqrt(var.sum(-1)))                  # (S,V)
+
+
+if __name__ == "__main__":
+    main()

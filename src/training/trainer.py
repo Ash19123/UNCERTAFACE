@@ -87,6 +87,7 @@ class Trainer:
         nfile = root / "metadata/normalizer.json"
         self.norm = pp.Normalizer.load(nfile) if nfile.exists() else pp.fit_normalizer_from_train(root)
         self.root = root
+        self.norm.save(self.run_dir / "normalizer.json")          # each run carries the transform it was trained with
         d, a = cfg["data"], cfg["augmentation"]
         mk = lambda split, aug: ds.UncertafaceDataset(
             root, split, self.norm, d["n_points"], d["knn_k"], a, aug, d["use_missing_info"], r["seed"])
