@@ -64,6 +64,25 @@ def test_severities_cycled(built):
     assert all(v["count"] > 0 and v["all_in_bin"] for v in rep["missingness"].values())
 
 
+def test_near_duplicate_rejection():
+    g = dict(CFG["generator"])
+    base = bd.gen.generate_base(0, 1, g)
+    acc = [base.skull_verts.reshape(-1)]
+    # a candidate identical to an accepted skull must never be accepted at attempt 0 with a huge threshold
+    hard = dict(g, min_pairwise_skull_rms_mm=1e6, max_attempts=3)
+    with pytest.raises(RuntimeError):
+        bd.generate_distinct_base(0, 1, hard, 4, acc)
+    # normal threshold: accepted subject is >= threshold from the existing one
+    acc2 = [base.skull_verts.reshape(-1)]
+    sub, _ = bd.generate_distinct_base(5, 1, g, 4, acc2)
+    assert len(acc2) == 2
+    assert bd.skull_rms(acc2[1], np.stack(acc2[:1]), len(sub.skull_verts)).min() >= g["min_pairwise_skull_rms_mm"]
+    # rejection path: duplicate of an accepted skull is redrawn
+    acc3 = [bd.gen.generate_base(5, 1, g).skull_verts.reshape(-1)]
+    sub3, attempt = bd.generate_distinct_base(5, 1, g, 4, acc3)
+    assert attempt >= 1 and not np.array_equal(sub3.skull_verts.reshape(-1), acc3[0])
+
+
 def test_leakage_detector_catches_leaks():
     samples = [dict(sample_id="B0000_O00", base_id=0, split="train"), dict(sample_id="B0001_O00", base_id=1, split="test")]
     ok = bd.check_leakage({"train": [0], "validation": [], "calibration": [], "test": [1]}, samples)

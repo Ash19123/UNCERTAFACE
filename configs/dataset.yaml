@@ -32,13 +32,18 @@ generator:
     field_amp:   [0.00, 0.03]    # smooth random radial field (fraction of radius)
     asymmetry:   [0.00, 1.00]    # weight of the left-right antisymmetric part of the field
   face:                          # independent of bone: irreducible from skull alone
-    thickness_scale: [0.75, 1.30]   # global soft-tissue scale
+    thickness_scale: [0.75, 1.20]   # global soft-tissue scale
     thickness_field_amp: [0.00, 0.15]
     nose_projection: [0.0, 12.0]    # mm along surface normal
     lip_fullness:    [0.0, 4.0]
-    cheek_fat:       [0.0, 8.0]
+    cheek_fat:       [0.0, 5.0]
     unobserved_field_amp: [0.0, 3.0]  # mm, smooth random field
   min_thickness_mm: 1.0
+  # Near-duplicate control: a candidate base whose skull is within this per-vertex
+  # RMS (mm) of an already accepted skull is redrawn. 2 mm is infeasible for 300 bases
+  # (99% would have a closer neighbour: variation is dominated by 3 axis lengths), so 1 mm.
+  min_pairwise_skull_rms_mm: 1.0
+  max_attempts: 50
 
 observation:                 # how incomplete, noisy point clouds are made from a skull
   patterns: [patchy, cap, upper, lateral, region]

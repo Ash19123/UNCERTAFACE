@@ -58,6 +58,27 @@ def make_splits(n_base: int, fractions: dict, seed: int) -> dict[str, list[int]]
     return out
 
 
+def skull_rms(a: np.ndarray, flat_others: np.ndarray, n_verts: int) -> np.ndarray:
+    """Per-vertex RMS 3D distance (mm) between flattened skull ``a`` and each row of ``flat_others``."""
+    return np.sqrt(((flat_others - a) ** 2).sum(1) / n_verts)
+
+
+def generate_distinct_base(b: int, seed: int, gcfg: dict, subdivisions: int,
+                           accepted: list[np.ndarray]):
+    """Generate base ``b``, redrawing (``attempt`` 0,1,2,...) until its skull is at least
+    ``min_pairwise_skull_rms_mm`` from every accepted skull. Appends the accepted skull to
+    ``accepted`` and returns ``(subject, attempt)``. Deterministic given the build order.
+    """
+    thr, max_attempts = float(gcfg["min_pairwise_skull_rms_mm"]), int(gcfg["max_attempts"])
+    for attempt in range(max_attempts):
+        sub = gen.generate_base(b, seed, gcfg, subdivisions, attempt)
+        flat = sub.skull_verts.reshape(-1)
+        if not accepted or skull_rms(flat, np.stack(accepted), len(sub.skull_verts)).min() >= thr:
+            accepted.append(flat)
+            return sub, attempt
+    raise RuntimeError(f"base {b}: no candidate >= {thr} mm from existing skulls in {max_attempts} attempts")
+
+
 def _write_json(path: Path, obj) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, indent=2, sort_keys=True))
@@ -78,9 +99,12 @@ def build_dataset(cfg: dict, root: str | Path, n_base: int | None = None,
     splits = make_splits(n_base, cfg["splits"], seed)
     split_of = {b: s for s, ids in splits.items() for b in ids}
     records, ref_idx = [], None
+    accepted: list[np.ndarray] = []        # flattened accepted skulls, for near-duplicate rejection
+    attempts_used: dict[int, int] = {}
 
     for b in range(n_base):
-        sub = gen.generate_base(b, seed, gcfg, sub_div)
+        sub, attempt = generate_distinct_base(b, seed, gcfg, sub_div, accepted)
+        attempts_used[b] = attempt
         name = base_name(b)
         if ref_idx is None:
             ref_idx = sub.face_vert_index
@@ -96,6 +120,7 @@ def build_dataset(cfg: dict, root: str | Path, n_base: int | None = None,
         mu.save_mesh(str(root / "raw/generated/facial_meshes" / f"{name}.ply"), sub.face_verts, sub.face_faces)
         _write_json(root / "raw/generated/paired_samples" / f"{name}.json", dict(
             base_id=b, split=split_of[b], synthetic=True, units="mm", provenance=PROVENANCE,
+            generation_attempt=attempt,
             generator_params=sub.params, skull_mesh=f"raw/generated/cranial_meshes/{name}.ply",
             face_mesh=f"raw/generated/facial_meshes/{name}.ply", seed=seed))
         (root / "processed/facial_targets").mkdir(parents=True, exist_ok=True)
@@ -128,6 +153,10 @@ def build_dataset(cfg: dict, root: str | Path, n_base: int | None = None,
             split=s, base_ids=splits[s],
             sample_ids=[r["sample_id"] for r in records if r["split"] == s]))
     report = validate_dataset(root, cfg)
+    report["near_duplicate_rejection"] = dict(
+        threshold_rms_mm=gcfg["min_pairwise_skull_rms_mm"],
+        candidates_rejected=int(sum(attempts_used.values())),
+        bases_needing_redraw=int(sum(a > 0 for a in attempts_used.values())))
     report["config_sha256"] = hashlib.sha256(yaml.safe_dump(cfg, sort_keys=True).encode()).hexdigest()
     report["dataset_version"] = ds["version"]
     report["config"] = cfg
@@ -201,7 +230,10 @@ def validate_dataset(root: str | Path, cfg: dict) -> dict:
     files_ok = all((root / r["pointcloud"]).exists() for r in samples)
     unit_ok = bool(((ext_s[:, 0] > 100) & (ext_s[:, 0] < 190) & (ext_s[:, 1] > 140) & (ext_s[:, 1] < 230)
                     & (ext_s[:, 2] > 100) & (ext_s[:, 2] < 180)).all()) and all(r["units"] == "mm" for r in samples)
+    min_rms = float(rms[off].min()) if off.any() else float("inf")
     checks = dict(leakage=leak, files_present=files_ok, correspondence_consistent=bool(corr_ok),
+                  no_near_duplicate_skulls=bool(min_rms >= gcfg["min_pairwise_skull_rms_mm"] - 1e-6),
+                  face_narrower_than_skull=bool((ext_f[:, 0] < ext_s[:, 0]).all()),
                   units_plausible_mm=unit_ok, all_synthetic=all(r["synthetic"] for r in samples),
                   no_exact_duplicate_skulls=len(hashes) == len(skulls),
                   all_severity_bins_respected=all(v["all_in_bin"] for v in sev_stats.values()))

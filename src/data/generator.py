@@ -45,8 +45,8 @@ _THICKNESS_ANCHORS = [
     ((0.0, 0.85, 0.50), 4.5),    # forehead
     ((0.0, 1.00, 0.10), 3.0),    # glabella / nasal bridge
     ((0.0, 1.00, -0.15), 3.5),   # nose
-    ((0.65, 0.70, -0.25), 14.0),  # cheek R
-    ((-0.65, 0.70, -0.25), 14.0),  # cheek L
+    ((0.50, 0.80, -0.25), 10.0),  # cheek R
+    ((-0.50, 0.80, -0.25), 10.0),  # cheek L
     ((0.0, 0.95, -0.45), 10.0),  # mouth
     ((0.0, 0.70, -0.80), 8.0),   # chin
 ]
@@ -154,7 +154,7 @@ def region_labels(d: np.ndarray) -> np.ndarray:
     lab[z < -0.55] = 6
     lab[y < -0.35] = 3
     lab[(y > 0.2) & (z >= 0.5)] = 1
-    lab[(y > 0.35) & (z < 0.5)] = FACE_REGION
+    lab[(y > 0.35) & (z < 0.5) & (np.abs(x) <= 0.8)] = FACE_REGION  # |x| cap keeps the patch frontal
     return lab
 
 
@@ -193,7 +193,7 @@ def thickness_field(d: np.ndarray, p: dict, min_thickness: float) -> np.ndarray:
     t = p["thickness_scale"] * base_thickness(d) * (1.0 + p["thickness_field_amp"] * g)
     t += p["nose_projection"] * bump(d, (0, 1.0, -0.15), 0.18)
     t += p["lip_fullness"] * bump(d, (0, 0.95, -0.45), 0.2)
-    t += p["cheek_fat"] * sym_bump(d, (0.65, 0.70, -0.25), 0.35)
+    t += p["cheek_fat"] * sym_bump(d, (0.50, 0.80, -0.25), 0.35)
     t += p["unobserved_field_amp"] * u
     return np.maximum(t, min_thickness)
 
@@ -221,17 +221,24 @@ def build_subject(base_id: int, params: dict, cfg: dict, subdivisions: int = 4) 
     region = region_labels(d)
     vn = mu.vertex_normals(skull, faces)
 
-    fidx = np.where(region == FACE_REGION)[0]
+    in_face = region == FACE_REGION
+    sub = faces[in_face[faces].all(axis=1)]
+    fidx = np.unique(sub)      # region vertices without a complete triangle are dropped (same for every subject)
     t = thickness_field(d[fidx], params, cfg["min_thickness_mm"])
     face = skull[fidx] + vn[fidx] * t[:, None]
 
     remap = -np.ones(len(d), dtype=np.int64)
     remap[fidx] = np.arange(len(fidx))
-    sub = faces[(remap[faces] >= 0).all(axis=1)]
     return Subject(base_id, params, skull, faces, region, fidx, face, remap[sub], t)
 
 
-def generate_base(base_id: int, seed: int, cfg: dict, subdivisions: int = 4) -> Subject:
-    """Generate base geometry ``base_id``; independent of generation order."""
-    rng = np.random.default_rng(np.random.SeedSequence([int(seed), int(base_id)]))
+def generate_base(base_id: int, seed: int, cfg: dict, subdivisions: int = 4, attempt: int = 0) -> Subject:
+    """Generate base geometry ``base_id``; independent of generation order.
+
+    ``attempt > 0`` draws a fresh parameter set for the same id; the dataset
+    builder uses it to replace candidates rejected as near-duplicates.
+    ``attempt = 0`` reproduces the original seeding exactly.
+    """
+    key = [int(seed), int(base_id)] + ([int(attempt)] if attempt else [])
+    rng = np.random.default_rng(np.random.SeedSequence(key))
     return build_subject(base_id, sample_params(rng, cfg), cfg, subdivisions)

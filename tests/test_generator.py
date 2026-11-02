@@ -50,6 +50,18 @@ def test_face_correspondence_and_thickness():
         assert 300 < len(s.face_verts) < 1200
 
 
+def test_face_not_wider_than_skull():
+    for s in SUBS:
+        assert np.ptp(s.face_verts[:, 0]) < np.ptp(s.skull_verts[:, 0])
+        assert np.abs(s.face_verts[:, 0]).max() < np.abs(s.skull_verts[:, 0]).max()
+
+
+def test_attempt_changes_params_and_zero_is_default():
+    a0 = gen.generate_base(2, SEED, GCFG, attempt=0)
+    assert np.array_equal(a0.skull_verts, gen.generate_base(2, SEED, GCFG).skull_verts)
+    assert not np.array_equal(a0.skull_verts, gen.generate_base(2, SEED, GCFG, attempt=1).skull_verts)
+
+
 def test_face_patch_is_single_disk():
     s = SUBS[0]
     rep = mu.validate_mesh(s.face_verts, s.face_faces)
