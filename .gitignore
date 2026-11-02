@@ -10,3 +10,4 @@ checkpoints/
 experiments/runs/
 *.pt
 *.pth
+*.log
