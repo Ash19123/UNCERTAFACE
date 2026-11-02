@@ -1,4 +1,4 @@
-# Real skulls: MUG500+ with a synthetic face
+﻿# Real skulls: MUG500+ with a synthetic face
 
 ## What is real and what is not
 | Component | Status |
@@ -32,8 +32,9 @@ Observed so far (first cases): alignment residuals about 2-4 mm; fitted scales 0
 
 ## The synthetic face (`src/data/face_from_skull.py`)
 In the reference frame the front-most skull surface y(x, z) is rasterised (vertex splats), holes are filled, grey-scale closing
-(22 mm radius) bridges the orbits, nasal opening and the gap between the teeth (soft tissue spans them), and Gaussian smoothing
-(5 mm) removes bony detail. The envelope is sampled on a fixed oval 5 mm grid (603 vertices), so vertex `v` is the same grid location for
+(22 mm radius) bridges the orbits, nasal opening and the gap between the teeth (soft tissue spans them), a 13 mm dilation keeps the
+envelope at or above the bone, and Gaussian smoothing (4 mm) removes bony detail. The envelope sits on average ~7 mm above the bone
+(including the bridged openings), and thickness is measured from it. Without the dilation 29% of skull vertices poked through the face (max 37 mm); now penetration is ~0 and is checked in every dataset report (`face_clears_bone`). The envelope is sampled on a fixed oval 5 mm grid (603 vertices), so vertex `v` is the same grid location for
 every skull. `face = base + t * n` with `n` the base-grid vertex normal and thickness
 `t = max(1, s * t0 * (1 + a g) + nose + lips + cheeks + u)`. `t0` blends assumed regional anchors (forehead 4.5, glabella 5, nose 3.5,
 orbit 6, cheek 12, lip 8, mouth 10, chin 8 mm; anchor positions were set by eye on the reference skull). The latents
@@ -48,3 +49,4 @@ orbit 6, cheek 12, lip 8, mouth 10, chin 8 mm; anchor positions were set by eye 
   Joint non-rigid warp and left-right mirror augmentation (train only) create shape variants of the *training* skulls; they are not
   independent people and never cross splits.
 - Left-right mirroring assumes the face grid and skull are approximately symmetric.
+

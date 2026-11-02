@@ -21,7 +21,7 @@ skull + normal * t, not real facial anatomy; anchor positions were set on the re
 from __future__ import annotations
 
 import numpy as np
-from scipy.ndimage import gaussian_filter, grey_closing, distance_transform_edt
+from scipy.ndimage import distance_transform_edt, gaussian_filter, grey_closing, grey_dilation
 
 from . import mesh_utils as mu
 
@@ -44,14 +44,39 @@ def splat_depth(verts: np.ndarray, xr=(-90.0, 90.0), zr=(-140.0, 70.0), res: flo
     return H, xr, zr
 
 
-def front_envelope(verts: np.ndarray, close_mm: float = 22.0, smooth_mm: float = 5.0, res: float = RES):
-    """Closed + smoothed front-most surface; returns ``(H, xr, zr)`` (H indexed [z, x], mm)."""
-    H, xr, zr = splat_depth(verts, res=res)
-    r = int(round(close_mm / res))
+def _disk(radius_mm: float, res: float):
+    r = max(1, int(round(radius_mm / res)))
     yy, xx = np.mgrid[-r:r + 1, -r:r + 1]
-    disk = (xx ** 2 + yy ** 2) <= r * r
-    Hc = grey_closing(H, footprint=disk, mode="nearest")
-    return gaussian_filter(Hc, sigma=smooth_mm / res, mode="nearest"), xr, zr
+    return (xx ** 2 + yy ** 2) <= r * r
+
+
+def front_envelope(verts: np.ndarray, close_mm: float = 22.0, dilate_mm: float = 13.0, smooth_mm: float = 4.0,
+                   res: float = RES):
+    """Closed, dilated and smoothed front-most surface; returns ``(H, xr, zr)`` (H indexed [z, x], mm).
+
+    Closing bridges orbits / nasal opening / tooth gap. A small DILATION before the Gaussian smoothing keeps the
+    smoothed surface at or above the bone (smoothing alone would shave off prominent teeth, nasal bones and cheek
+    bones so they poke through the face). The envelope is therefore a few mm proud of the bone; ``penetration_mm``
+    measures how well it clears the bone.
+    """
+    H, xr, zr = splat_depth(verts, res=res)
+    Hc = grey_closing(H, footprint=_disk(close_mm, res), mode="nearest")
+    Hd = grey_dilation(Hc, footprint=_disk(dilate_mm, res), mode="nearest")
+    return gaussian_filter(Hd, sigma=smooth_mm / res, mode="nearest"), xr, zr
+
+
+def penetration_mm(skull_ref: np.ndarray, face_ref: np.ndarray) -> dict:
+    """How far skull vertices poke IN FRONT of the face surface (reference-frame mm), inside the face footprint.
+
+    The face is interpolated as a heightfield y_face(x, z); penetration = max(0, y_bone - y_face).
+    """
+    from scipy.interpolate import LinearNDInterpolator
+    f = LinearNDInterpolator(face_ref[:, [0, 2]], face_ref[:, 1])
+    inside = f(skull_ref[:, [0, 2]])
+    ok = np.isfinite(inside) & (skull_ref[:, 1] > 30)
+    pen = np.maximum(skull_ref[ok, 1] - inside[ok], 0.0)
+    return dict(n=int(ok.sum()), mean=float(pen.mean()), p99=float(np.quantile(pen, 0.99)), max=float(pen.max()),
+                frac_over_1mm=float((pen > 1.0).mean()))
 
 
 def sample_on_grid(H, xr, zr, res: float = RES):

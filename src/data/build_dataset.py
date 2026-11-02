@@ -226,12 +226,27 @@ def validate_dataset(root: str | Path, cfg: dict) -> dict:
     unit_ok = bool(((ext_s[:, 0] > 100) & (ext_s[:, 0] < 200) & (ext_s[:, 1] > 140) & (ext_s[:, 1] < 240)
                     & (ext_s[:, 2] > 100) & (ext_s[:, 2] < 260)).all()) and all(r["units"] == "mm" for r in samples)
     checks = dict(leakage=leak, files_present=files_ok, correspondence_consistent=corr_ok,
-                  no_near_duplicate_skulls=no_near_dup, face_narrower_than_skull=bool((ext_f[:, 0] < ext_s[:, 0]).all()),
+                  no_near_duplicate_skulls=no_near_dup,
+                  # procedural toy world: face strictly narrower than the skull; real heads: soft tissue may be a bit
+                  # wider than the bone at the cheeks, so allow up to 1.15 x skull width
+                  face_width_plausible=bool((ext_f[:, 0] / ext_s[:, 0] < (1.0 if source == "procedural" else 1.15)).all()),
                   units_plausible_mm=unit_ok,
                   provenance_flags_present=all(r["synthetic"] and r["face_synthetic"] and r["provenance"] for r in samples),
                   no_exact_duplicate_skulls=len(hashes) == len(skulls),
                   all_severity_bins_respected=all(v["all_in_bin"] for v in sev_stats.values()))
     real = bool(samples[0]["real_skull"])
+    pen = None
+    if real:      # does the synthetic face clear the real bone? (face / skull in the aligned frame, mm)
+        from . import face_from_skull as ffs
+        rows = []
+        for b in base_ids:
+            t = np.load(root / f"processed/facial_targets/{base_name(b)}.npz")
+            m = json.loads((root / f"raw/generated/paired_samples/{base_name(b)}.json").read_text())["extra"]
+            s = float(m["scale"])
+            rows.append(ffs.penetration_mm(s * skulls[base_ids.index(b)], s * t["face_verts"]))
+        pen = dict(mean_mm=float(np.mean([r["mean"] for r in rows])), p99_mm=float(np.mean([r["p99"] for r in rows])),
+                   worst_max_mm=float(max(r["max"] for r in rows)), mean_frac_over_1mm=float(np.mean([r["frac_over_1mm"] for r in rows])))
+        checks["face_clears_bone"] = bool(pen["mean_frac_over_1mm"] < 0.10 and pen["worst_max_mm"] < 15.0)
     return dict(
         synthetic=True, real_skull=real, face_synthetic=True, provenance=samples[0]["provenance"], units="mm",
         counts=dict(independent_base_geometries=len(base_ids), observations=len(samples),
@@ -242,7 +257,7 @@ def validate_dataset(root: str | Path, cfg: dict) -> dict:
                            noise_sigma_mm_mean=float(np.mean([r["observation"]["noise_sigma_mm"] for r in samples]))),
         bounding_box_mm=dict(skull_extent_min=ext_s.min(0).tolist(), skull_extent_max=ext_s.max(0).tolist(),
                              face_extent_min=ext_f.min(0).tolist(), face_extent_max=ext_f.max(0).tolist()),
-        duplicates=dup, checks=checks,
+        duplicates=dup, face_bone_penetration=pen, checks=checks,
         all_checks_passed=bool(all((v["passed"] if isinstance(v, dict) else v) for v in checks.values())))
 
 
