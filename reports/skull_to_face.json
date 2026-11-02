@@ -1,0 +1,55 @@
+{
+  "run": "experiments/runs/probabilistic_scratch",
+  "sample_id": "B0009_O01",
+  "split": "validation",
+  "missing_fraction": 0.5305,
+  "final_vertex_rmse_mm": 2.035562996921997,
+  "mean_predicted_pos_std_mm": 5.360805034637451,
+  "mean_distance_from_bone_mm_by_step": [
+    {
+      "lam": 0.0,
+      "mm": 0.0
+    },
+    {
+      "lam": 0.1,
+      "mm": 0.924181532438074
+    },
+    {
+      "lam": 0.2,
+      "mm": 1.8483630648761482
+    },
+    {
+      "lam": 0.30000000000000004,
+      "mm": 2.7725445973142224
+    },
+    {
+      "lam": 0.4,
+      "mm": 3.6967261297522964
+    },
+    {
+      "lam": 0.5,
+      "mm": 4.62090766219037
+    },
+    {
+      "lam": 0.6000000000000001,
+      "mm": 5.545089194628445
+    },
+    {
+      "lam": 0.7000000000000001,
+      "mm": 6.469270727066518
+    },
+    {
+      "lam": 0.8,
+      "mm": 7.393452259504592
+    },
+    {
+      "lam": 0.9,
+      "mm": 8.317633791942665
+    },
+    {
+      "lam": 1.0,
+      "mm": 9.24181532438074
+    }
+  ],
+  "note": "growth over lambda is linear interpolation for visualisation; the final frame is the model prediction"
+}

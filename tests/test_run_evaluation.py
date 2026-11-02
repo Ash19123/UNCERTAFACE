@@ -100,6 +100,24 @@ def test_ensemble_evaluation_separates_uncertainty_kinds(trained, tmp_path):
         re.evaluate_ensemble([d / "runs/t", d / "runs/td"], "bad", "validation", out_root=str(tmp_path))
 
 
+def test_skull_to_face_growth_endpoints_and_outputs(trained, tmp_path):
+    from src.visualization import skull_to_face as s2f
+    a = np.random.default_rng(0).normal(size=(20, 3))
+    b = a + np.random.default_rng(1).normal(size=(20, 3))
+    lam, fr = s2f.growth_frames(a, b, 6)
+    assert np.allclose(fr[0], a) and np.allclose(fr[-1], b) and len(fr) == 6
+    d = [np.linalg.norm(f - a, axis=1).mean() for f in fr]
+    assert all(x < y for x, y in zip(d, d[1:]))                       # layer thickens monotonically
+    s = s2f.build(trained / "runs/t", tmp_path / "g.html", "validation", sample=0, n_steps=5,
+                  profile_png=tmp_path / "p.png")
+    assert (tmp_path / "g.html").exists() and (tmp_path / "p.png").exists() and (tmp_path / "g.json").exists()
+    th = [x["mm"] for x in s["mean_distance_from_bone_mm_by_step"]]
+    assert th[0] == 0.0 or th[0] < th[-1]
+    assert s["final_vertex_rmse_mm"] > 0 and "linear interpolation" in s["note"]
+    with pytest.raises(ValueError):
+        s2f.build(trained / "runs/t", tmp_path / "x.html", severity="nonexistent")
+
+
 def test_uncertainty_vs_missingness_handles_deterministic():
     p = dict(mean=np.zeros((5, 4, 3)), gt=np.random.default_rng(0).normal(size=(5, 4, 3)), std=None,
              missing_fraction=np.linspace(0.1, 0.8, 5))
