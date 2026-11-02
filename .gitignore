@@ -11,3 +11,5 @@ experiments/runs/
 *.pt
 *.pth
 *.log
+UNCERTAFACE_DATA*/
+external_data/

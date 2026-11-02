@@ -1,0 +1,26 @@
+{
+  "mild": {
+    "sample_id": "B0009_O03",
+    "missing_fraction": 0.1265999972820282,
+    "vertex_rmse_mm": 2.5697696208953857,
+    "mean_error_mm": 2.3324384689331055
+  },
+  "moderate": {
+    "sample_id": "B0009_O00",
+    "missing_fraction": 0.357450008392334,
+    "vertex_rmse_mm": 2.955732583999634,
+    "mean_error_mm": 2.7305195331573486
+  },
+  "severe": {
+    "sample_id": "B0009_O01",
+    "missing_fraction": 0.5304999947547913,
+    "vertex_rmse_mm": 3.3107364177703857,
+    "mean_error_mm": 3.078604221343994
+  },
+  "extreme": {
+    "sample_id": "B0009_O02",
+    "missing_fraction": 0.7252500057220459,
+    "vertex_rmse_mm": 2.597477912902832,
+    "mean_error_mm": 2.390151262283325
+  }
+}

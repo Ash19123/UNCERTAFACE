@@ -1,0 +1,11 @@
+{
+  "type": "isotropic_similarity",
+  "center": [
+    -0.006199736133578417,
+    0.15877681001137325,
+    -0.10994107272429013
+  ],
+  "scale": 76.56773158409752,
+  "units_of_scale": "mm",
+  "fitted_on": "210 base geometries"
+}

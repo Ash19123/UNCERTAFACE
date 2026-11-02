@@ -57,9 +57,7 @@ def render(root, base_id: int, out_png, split_obs=("mild", "moderate", "severe",
 
     root = Path(root)
     sk_v, sk_f = mu.load_mesh(str(root / f"raw/generated/cranial_meshes/B{base_id:04d}.ply"))
-    corr = np.load(root / "processed/correspondence/correspondence.npz")
-    is_face = np.zeros(len(sk_v), bool)
-    is_face[corr["face_vert_index"]] = True
+    is_face = np.load(root / f"processed/facial_targets/B{base_id:04d}.npz")["skull_region"] == 0   # midface region tint
     recs = [json.loads(l) for l in (root / "metadata/samples.jsonl").read_text().splitlines()]
     recs = {r["observation"]["severity"]: r for r in recs if r["base_id"] == base_id}
 

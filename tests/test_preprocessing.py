@@ -70,7 +70,7 @@ def test_load_sample(root):
     assert s["points_mm"].dtype == np.float32 and s["points"].shape == s["points_mm"].shape
     assert np.allclose(n.inverse(s["points"]), s["points_mm"], atol=1e-3)
     assert np.allclose(n.inverse(s["face"]), s["face_mm"], atol=1e-3)
-    assert s["face"].shape[0] == len(s["face_vert_index"])
+    assert s["face"].ndim == 2 and s["face"].shape[1] == 3 and "face_vert_index" not in s
     assert abs(s["points"]).max() < 3                                    # roughly unit-scale after fitting
     assert 0.1 <= s["missing_fraction"] <= 0.85
     assert "points" not in pp.load_sample(root, rec)

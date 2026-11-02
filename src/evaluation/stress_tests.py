@@ -56,9 +56,8 @@ def load_geometry(root, base_id: int):
     """Complete skull mesh, region labels and ground-truth face of one base geometry (mm)."""
     root = Path(root)
     v, f = mu.load_mesh(str(root / f"raw/generated/cranial_meshes/B{base_id:04d}.ply"))
-    corr = np.load(root / "processed/correspondence/correspondence.npz")
-    gt = np.load(root / f"processed/facial_targets/B{base_id:04d}.npz")["face_verts"]
-    return v, f, corr["region"], gt
+    t = np.load(root / f"processed/facial_targets/B{base_id:04d}.npz")
+    return v, f, t["skull_region"].astype(np.int64), t["face_verts"]
 
 
 def _deformation(delta: float, seed: int) -> np.ndarray:

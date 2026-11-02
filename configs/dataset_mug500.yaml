@@ -1,0 +1,59 @@
+# Dataset built from REAL CT-derived skulls (MUG500+, CC BY 4.0) with a SYNTHETIC soft-tissue face.
+# Reuses the observation / splits / missingness settings of dataset.yaml.
+dataset:
+  version: "0.2.0"
+  source: mug500
+  synthetic: true            # the face (and all observations) are synthetic; the skull geometry is real
+  units: "mm"
+  seed: 20240
+  n_base: 0                  # 0 -> use every prepared skull
+  obs_per_base: 8            # incomplete observations per skull (severities cycled, 2 per severity)
+
+mug500:
+  processed_dir: external_data/mug500/processed   # output of scripts/prepare_mug500.py (git-ignored)
+  max_cases: null
+
+mesh:
+  cranium_subdivisions: 4    # unused for real skulls (kept so shared code paths keep working)
+  face_subdivisions: 4
+  area_eps: 1.0e-12
+
+# Only the face latents are used for real skulls (skull shape comes from the scan). Same ranges as dataset.yaml.
+generator:
+  skull: {}
+  face:
+    thickness_scale: [0.75, 1.20]
+    thickness_field_amp: [0.00, 0.15]
+    nose_projection: [0.0, 12.0]
+    lip_fullness: [0.0, 4.0]
+    cheek_fat: [0.0, 5.0]
+    unobserved_field_amp: [0.0, 3.0]
+  min_thickness_mm: 1.0
+  min_pairwise_skull_rms_mm: 0.0
+  max_attempts: 1
+
+observation:
+  patterns: [patchy, cap, upper, lateral, region]
+  dense_reference_points: 20000
+  max_tries: 30
+  noise_sigma_mm: [0.0, 1.5]
+  outlier_fraction: [0.0, 0.02]
+  outlier_scale_mm: 5.0
+  density_kappa: [0.0, 2.0]
+  samplers: [area, fps]
+
+sampling:
+  point_counts: [1024, 2048, 4096]
+  methods: [area, vertex, fps]
+
+splits:
+  train: 0.70
+  validation: 0.10
+  calibration: 0.10
+  test: 0.10
+
+missingness_bins:
+  mild: [0.10, 0.20]
+  moderate: [0.30, 0.45]
+  severe: [0.50, 0.70]
+  extreme: [0.70, 0.85]

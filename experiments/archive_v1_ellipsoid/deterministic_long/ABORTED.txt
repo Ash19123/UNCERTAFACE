@@ -1,0 +1,5 @@
+Run aborted manually at epoch ~40 of 150 (validation RMSE still on the ~4.36 mm template-level plateau).
+Reason: two concurrent training processes slowed each other ~5x; the chain deterministic_long -> probabilistic_warm
+was dropped because probabilistic_scratch already trained the variance head successfully (best val RMSE 3.34 mm at
+epoch 39). The deterministic baseline is instead produced by the ablation protocol (abl_deterministic).
+This directory is kept as a record of a failed/abandoned experiment; its numbers are NOT used in any reported table.

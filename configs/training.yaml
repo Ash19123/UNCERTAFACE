@@ -19,6 +19,8 @@ augmentation:                 # applied to TRAIN only; geometry transforms act o
   rotation_deg: 5.0           # max rotation about a random axis (both input and target)
   translation_mm: 3.0         # max per-axis shift (both)
   scale: 0.02                 # isotropic scale in [1-s, 1+s] (both)
+  warp_mm: 0.0                # max smooth non-rigid displacement (both); 0 = off (real-skull runs use 3.0)
+  mirror_prob: 0.0            # joint left-right mirror (grid-based faces only; real-skull runs use 0.5)
   jitter_mm: 0.3              # extra Gaussian noise on INPUT points only
   dropout: [0.0, 0.2]         # fraction of input points randomly removed
   density_keep: [0.6, 1.0]    # keep-fraction when changing sampling density

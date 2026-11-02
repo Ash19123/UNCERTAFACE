@@ -25,6 +25,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from scipy.spatial import cKDTree
 from torch.utils.data import DataLoader, Dataset
 
 from .augmentation import Augmenter
@@ -61,7 +62,19 @@ class UncertafaceDataset(Dataset):
         # raw (mm) arrays are small; cache them to avoid re-reading .npz files every epoch
         self._cache = [load_sample(self.root, r) for r in self.records] if cache else None
         self.n_points, self.knn_k, self.use_missing_info, self.seed, self.epoch = n_points, knn_k, use_missing_info, seed, 0
-        self.augmenter = Augmenter(aug_cfg) if (augment and aug_cfg and aug_cfg.get("enabled", True)) else None
+        self.augmenter = (Augmenter(aug_cfg, self._mirror_perm()) if (augment and aug_cfg and aug_cfg.get("enabled", True))
+                          else None)
+
+    def _mirror_perm(self):
+        """Left-right partner index of each face vertex, if the face is grid-based (symmetric grid); else None."""
+        f = self.root / "processed/correspondence/correspondence.npz"
+        c = np.load(f)
+        if "face_grid_xz" not in c.files:
+            return None
+        g = c["face_grid_xz"]
+        tree = cKDTree(g)
+        d, idx = tree.query(g * np.array([-1.0, 1.0]))
+        return idx if d.max() < 1e-6 else None
 
     def set_epoch(self, epoch: int) -> None:
         self.epoch = int(epoch)

@@ -55,8 +55,9 @@ def build(run_dir, out_html, split="validation", sample=None, severity="severe",
     b = rec["base_id"]
     sk_v, sk_f = mu.load_mesh(str(root / f"raw/generated/cranial_meshes/B{b:04d}.ply"))
     corr = np.load(root / rec["correspondence"])
-    fidx, ff = corr["face_vert_index"], corr["face_faces"]
-    gt = np.load(root / rec["face_target"])["face_verts"]
+    ff = corr["face_faces"]
+    tgt = np.load(root / rec["face_target"])
+    gt = tgt["face_verts"]
     pc = np.load(root / rec["pointcloud"])
     visible = pc["vertex_visible"]
     miss = rec["observation"]["measured_missing_fraction"]
@@ -65,7 +66,7 @@ def build(run_dir, out_html, split="validation", sample=None, severity="severe",
     pred = out["mean_mm"][0].cpu().numpy()
     unc = out["pos_std_mm"][0].cpu().numpy() if "pos_std_mm" in out else None
     err = np.linalg.norm(pred - gt, axis=1)
-    base = sk_v[fidx]
+    base = tgt["face_base"]                                       # bone-side start of every face vertex
     lam, frames_pos = growth_frames(base, pred, n_steps)
 
     skull_col = np.where(visible, 0.0, 1.0)

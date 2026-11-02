@@ -31,8 +31,9 @@ def rotation_matrix(axis: np.ndarray, angle: float) -> np.ndarray:
 class Augmenter:
     """Callable ``(points_mm, face_mm, missing_fraction, rng) -> (points, face, info)``."""
 
-    def __init__(self, cfg: dict):
-        self.cfg = cfg
+    def __init__(self, cfg: dict, mirror_perm: np.ndarray | None = None):
+        """``mirror_perm`` (V,) maps each face vertex to its left-right partner; needed for mirroring."""
+        self.cfg, self.mirror_perm = cfg, mirror_perm
 
     def __call__(self, points: np.ndarray, face: np.ndarray, missing_fraction: float,
                  rng: np.random.Generator):
@@ -48,6 +49,25 @@ class Augmenter:
         points = s * points @ R.T + t
         face = s * face @ R.T + t
         info.update(rotation_deg=float(np.rad2deg(angle)), scale=float(s), translation_mm=t.tolist())
+
+        # ---- joint smooth non-rigid warp (same displacement field for input and target) ----
+        wmm = c.get("warp_mm", 0.0)
+        if wmm > 0:
+            k = 4
+            ctr = rng.uniform(-70, 70, size=(k, 3))
+            amp = np.clip(rng.normal(scale=wmm / 2, size=(k, 3)), -wmm, wmm)
+            def warp(p):
+                w = np.exp(-0.5 * ((p[:, None, :] - ctr[None]) ** 2).sum(-1) / 45.0 ** 2)     # (n,k)
+                return p + w @ amp
+            points, face = warp(points), warp(face)
+            info["warp_mm"] = float(np.abs(amp).max())
+
+        # ---- joint left-right mirror (face vertices are permuted to their mirrored partners) ----
+        info["mirrored"] = False
+        if self.mirror_perm is not None and rng.random() < c.get("mirror_prob", 0.0):
+            points = points * np.array([-1.0, 1.0, 1.0])
+            face = (face * np.array([-1.0, 1.0, 1.0]))[self.mirror_perm]
+            info["mirrored"] = True
 
         # ---- input-only degradations --------------------------------------
         if c["jitter_mm"] > 0:

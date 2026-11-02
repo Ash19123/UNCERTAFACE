@@ -108,16 +108,13 @@ def load_sample(root, record: dict, norm: Normalizer | None = None) -> dict:
     """Load one observation and its target (float32).
 
     Returns raw-mm arrays, plus normalised copies when ``norm`` is given:
-    ``points``, ``face``, ``vertex_visible``, ``missing_fraction``, and
-    ``face_vert_index`` (skull vertex index of each face vertex).
+    ``points``, ``face``, ``vertex_visible`` and ``missing_fraction``.
     """
     root = Path(root)
     pc = np.load(root / record["pointcloud"])
     face = np.load(root / record["face_target"])["face_verts"]
-    corr = np.load(root / record["correspondence"])
     out = dict(sample_id=record["sample_id"], points_mm=pc["points"].astype(np.float32),
                face_mm=face.astype(np.float32), vertex_visible=pc["vertex_visible"],
-               face_vert_index=corr["face_vert_index"],
                missing_fraction=float(record["observation"]["measured_missing_fraction"]))
     if norm is not None:
         out["points"] = norm.forward(out["points_mm"]).astype(np.float32)

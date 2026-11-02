@@ -1,0 +1,158 @@
+{
+  "name": "probabilistic",
+  "status": "early_stopped",
+  "seed": 0,
+  "epochs_run": 16,
+  "best_epoch": 0,
+  "best_monitor": -0.7484286983807882,
+  "monitor": "val_loss",
+  "duration_s": 300.18901801109314,
+  "hardware": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.9",
+    "torch": "2.5.1+cu121",
+    "device": "cuda",
+    "gpu": "NVIDIA GeForce RTX 3050 6GB Laptop GPU",
+    "cuda": "12.1"
+  },
+  "dataset": {
+    "version": "0.1.0",
+    "config_sha256": "03db455a747e0fb22925e5ec769a5ae22aa75b57c12f96699ea008b0da16670f",
+    "counts": {
+      "base_per_split": {
+        "calibration": 30,
+        "test": 30,
+        "train": 210,
+        "validation": 30
+      },
+      "independent_base_geometries": 300,
+      "observations": 1200,
+      "observations_per_split": {
+        "calibration": 120,
+        "test": 120,
+        "train": 840,
+        "validation": 120
+      }
+    },
+    "synthetic": true
+  },
+  "splits_dir": "UNCERTAFACE_DATA\\splits",
+  "model_params": 762790,
+  "model": {
+    "use_missing_info": true,
+    "probabilistic": true,
+    "encoder": {
+      "name": "pointnetpp",
+      "m1": 256,
+      "m2": 64,
+      "k1": [
+        16,
+        32
+      ],
+      "k2": [
+        16,
+        32
+      ]
+    },
+    "aggregation": {
+      "d_model": 128,
+      "n_freq": 6
+    },
+    "decoder": {
+      "n_layers": 2,
+      "n_heads": 4,
+      "vert_embed_dim": 16,
+      "self_attention": true
+    },
+    "head": {
+      "std_bounds_mm": [
+        0.1,
+        25.0
+      ],
+      "init_std_mm": 3.0
+    }
+  },
+  "loss": {
+    "reconstruction": "mse",
+    "lambda_rec": 1.0,
+    "lambda_nll": 1.0,
+    "lambda_surface": 0.1,
+    "lambda_reg": 0.0,
+    "nll_beta": 0.0,
+    "nll_warmup_epochs": 5,
+    "unit_mm": 10.0,
+    "surface_weights": {
+      "laplacian": 1.0,
+      "edge": 1.0,
+      "normal": 0.1
+    }
+  },
+  "optim": {
+    "epochs": 60,
+    "batch_size": 16,
+    "lr": 0.001,
+    "weight_decay": 0.01,
+    "warmup_epochs": 3,
+    "min_lr_frac": 0.02,
+    "grad_clip": 1.0,
+    "amp": false,
+    "num_workers": 0
+  },
+  "augmentation": {
+    "enabled": true,
+    "rotation_deg": 5.0,
+    "translation_mm": 3.0,
+    "scale": 0.02,
+    "jitter_mm": 0.3,
+    "dropout": [
+      0.0,
+      0.2
+    ],
+    "density_keep": [
+      0.6,
+      1.0
+    ],
+    "occlusion_prob": 0.3,
+    "occlusion_fraction": [
+      0.05,
+      0.15
+    ]
+  },
+  "data": {
+    "n_points": 1024,
+    "knn_k": 8,
+    "use_missing_info": true
+  },
+  "checkpoint": {
+    "best": "experiments\\runs\\probabilistic\\best.pt",
+    "latest": "experiments\\runs\\probabilistic\\latest.pt"
+  },
+  "normalizer": {
+    "type": "isotropic_similarity",
+    "center": [
+      -0.006199736133578417,
+      0.15877681001137325,
+      -0.10994107272429013
+    ],
+    "scale": 76.56773158409752,
+    "units_of_scale": "mm",
+    "fitted_on": "210 base geometries"
+  },
+  "best_validation_metrics": {
+    "val_loss": -0.7484286983807882,
+    "val_rmse_mm": 4.564555014530135,
+    "val_mae_mm": 1.9564635117848714,
+    "val_max_vertex_err_mm": 10.022756258646647,
+    "val_rec": 0.06945053984721501,
+    "val_nll": -0.8179961880048116,
+    "val_lap": 0.00021456922210442522,
+    "val_edge": 0.0009546900478502114,
+    "val_normal": 3.867138184432406e-06,
+    "val_nll_mm": 1.484588901201884,
+    "val_pos_std_mm": 5.18000373840332,
+    "val_z2": 0.778286321957906,
+    "val_frac_std_at_lower": 0.0,
+    "val_frac_std_at_upper": 0.0
+  },
+  "all_warnings": []
+}

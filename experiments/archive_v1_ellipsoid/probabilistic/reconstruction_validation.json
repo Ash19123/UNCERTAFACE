@@ -1,0 +1,34 @@
+{
+  "mild": {
+    "sample_id": "B0009_O03",
+    "missing_fraction": 0.1265999972820282,
+    "vertex_rmse_mm": 3.655919075012207,
+    "mean_error_mm": 3.3340342044830322,
+    "mean_uncertainty_mm": 5.179797172546387,
+    "spearman_err_vs_unc": -0.12606541819548883
+  },
+  "moderate": {
+    "sample_id": "B0009_O00",
+    "missing_fraction": 0.357450008392334,
+    "vertex_rmse_mm": 3.6675288677215576,
+    "mean_error_mm": 3.342947483062744,
+    "mean_uncertainty_mm": 5.179991722106934,
+    "spearman_err_vs_unc": -0.12771823754518172
+  },
+  "severe": {
+    "sample_id": "B0009_O01",
+    "missing_fraction": 0.5304999947547913,
+    "vertex_rmse_mm": 3.6773083209991455,
+    "mean_error_mm": 3.3492019176483154,
+    "mean_uncertainty_mm": 5.181257724761963,
+    "spearman_err_vs_unc": -0.12970354104405452
+  },
+  "extreme": {
+    "sample_id": "B0009_O02",
+    "missing_fraction": 0.7252500057220459,
+    "vertex_rmse_mm": 3.637040615081787,
+    "mean_error_mm": 3.308763027191162,
+    "mean_uncertainty_mm": 5.179455280303955,
+    "spearman_err_vs_unc": -0.12842825787130907
+  }
+}
