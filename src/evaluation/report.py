@@ -45,6 +45,14 @@ def build_report(main: str, ensemble: str | None = None, reports="reports", data
           f"(oracle positional std: mean {o['oracle_pos_std_mm']['mean']:.2f}, range {o['oracle_pos_std_mm']['min']:.2f}-"
           f"{o['oracle_pos_std_mm']['max']:.2f} mm)"] if o else ["- not run"]
     L.append("")
+    b = _load(R / "baselines.json")
+    L += ["## Reference baseline (no skull evidence)"]
+    if b:
+        t = b["mean_template"]["test"]
+        L += ["- mean training face for every sample, test split (mm): " + ", ".join(f"{k} {v['mean']:.2f}" for k, v in t.items())]
+    else:
+        L += ["- not run"]
+    L.append("")
     r = _load(R / "results" / main / "results.json")
     if not r:
         return "\n".join(L + [f"## Main model `{main}`", "not evaluated yet"])
