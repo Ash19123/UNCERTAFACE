@@ -46,4 +46,4 @@ Google Colab: clone the repo, `pip install -r requirements.txt`, then run the sa
 - Failed or abandoned runs stay in `experiments/runs/` (see `ABORTED.txt`), and are excluded from reported tables.
 
 ## Licence
-No licence file has been chosen yet; all rights reserved by the repository owner until one is added.
+MIT, see `LICENSE`. The licence covers the code only; it makes no statement about suitability of the synthetic data or models for any forensic or identification use.
