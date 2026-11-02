@@ -42,7 +42,7 @@ def load_scene_data(run_dir, split="test", sample=None, severity="severe", devic
     b = rec["base_id"]
     sk_v, sk_f = mu.load_mesh(str(root / f"raw/generated/cranial_meshes/B{b:04d}.ply"))
     tri = sk_v[sk_f]
-    dv, df, _ = rs.cluster_decimate(tri, 3.4)                        # lighter mesh for rendering only
+    dv, df = rs.cluster_decimate(tri, 3.4)                        # lighter mesh for rendering only
     keep = np.unique(df)
     remap = -np.ones(len(dv), int)
     remap[keep] = np.arange(len(keep))

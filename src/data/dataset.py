@@ -13,7 +13,6 @@ Item keys
   missing_fraction ()  measured missing area fraction (ground truth from the generator;
                        for real data this would have to be estimated)
   face          (V,3)  normalised target;  face_mm (V,3) the same in mm
-  vertex_visible (Vs,) bool, skull vertices inside the observed region (for visualisation/analysis)
   sample_id, base_id
 ``use_missing_info=False`` zeroes ``missing_fraction`` and ``knn_dist`` so the
 missingness ablation uses exactly the same pipeline.
@@ -105,7 +104,6 @@ class UncertafaceDataset(Dataset):
                     missing_fraction=torch.tensor(miss, dtype=torch.float32),
                     face=torch.from_numpy(self.norm.forward(face_mm).astype(np.float32)),
                     face_mm=torch.from_numpy(face_mm),
-                    vertex_visible=torch.from_numpy(s["vertex_visible"]),
                     sample_id=rec["sample_id"], base_id=rec["base_id"])
 
 

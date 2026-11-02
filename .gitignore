@@ -13,3 +13,9 @@ experiments/runs/
 *.log
 UNCERTAFACE_DATA*/
 external_data/
+
+# demo outputs embed a derivative of real CT skull data (CC BY 4.0); keep out of the repo
+/demo/demo_data.json
+/demo/uncertaface_demo.html
+real_*.log
+real_*.err

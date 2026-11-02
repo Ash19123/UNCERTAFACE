@@ -1,0 +1,277 @@
+<title>UNCERTAFACE Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout concept: an instrument panel. A 3D viewer with its controls sits first, then a reading column that
+   states the numbers, the limits and the credits. Cool slate neutrals, one teal accent for the model,
+   amber for caution and for the bone the model cannot see. */
+:root {
+  --bg: #f1f4f6; --surface: #ffffff; --fg: #12202b; --muted: #546473; --line: #d3dce3;
+  --accent: #0a7c76; --accent-fg: #ffffff; --warn: #a85a05; --warn-bg: #fbf0e0; --viewer: #e8edf1;
+  --font-body: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "Spline Sans Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1318; --surface: #131c23; --fg: #e5edf2; --muted: #92a3b1; --line: #25333e;
+    --accent: #3fc7bd; --accent-fg: #052321; --warn: #f0a458; --warn-bg: #2a2013; --viewer: #090f13;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1318; --surface: #131c23; --fg: #e5edf2; --muted: #92a3b1; --line: #25333e;
+  --accent: #3fc7bd; --accent-fg: #052321; --warn: #f0a458; --warn-bg: #2a2013; --viewer: #090f13;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--font-body); margin: 0;
+  padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2.4rem, 7vw, 4.2rem); font-weight: 800; line-height: 1.02; letter-spacing: -0.03em; }
+h2 { font-size: 1.55rem; font-weight: 700; line-height: 1.2; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--accent); text-underline-offset: 3px; }
+.eyebrow { font: 500 0.78rem/1 var(--font-data); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+.lead { font-size: clamp(1.1rem, 2.4vw, 1.4rem); line-height: 1.45; max-width: 44ch; color: var(--fg); }
+.head { display: flex; flex-direction: column; gap: 16px; }
+.notice { background: var(--warn-bg); color: var(--fg); border-left: 4px solid var(--warn); padding: 14px 18px; max-width: 78ch; font-size: 0.97rem; }
+.notice strong { color: var(--warn); }
+.links { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 0.95rem; }
+.viewer { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.stage { background: var(--viewer); border: 1px solid var(--line); min-width: 0; }
+#plot { width: 100%; height: clamp(420px, 68vh, 640px); }
+.panel { background: var(--surface); border: 1px solid var(--line); padding: 18px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.group { display: flex; flex-direction: column; gap: 8px; }
+.group > label, .group > .lab { font: 500 0.74rem/1.2 var(--font-data); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+.seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.seg button, .btn { font: 500 0.88rem/1.2 var(--font-body); padding: 9px 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; text-align: left; }
+.seg button[aria-pressed="true"], .btn.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.seg button small { display: block; font: 400 0.74rem/1.3 var(--font-data); opacity: 0.8; margin-top: 2px; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.check { display: flex; gap: 8px; align-items: center; font-size: 0.92rem; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.readout { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 0.92rem; margin: 0; }
+.readout dt { color: var(--muted); }
+.readout dd { margin: 0; font: 500 0.95rem var(--font-data); text-align: right; font-variant-numeric: tabular-nums; }
+.note { font-size: 0.85rem; color: var(--muted); max-width: 60ch; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.card h3 span { font: 500 0.78rem var(--font-data); color: var(--accent); margin-right: 8px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 8px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { font: 500 0.74rem var(--font-data); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+td { font-family: var(--font-data); }
+.chartbox { background: var(--surface); border: 1px solid var(--line); padding: 16px; min-width: 0; }
+.chartbox svg { width: 100%; height: auto; display: block; }
+.chartbox text { fill: var(--fg); font-family: var(--font-body); }
+.chartbox .mono { font-family: var(--font-data); }
+.chartbox .axis { fill: var(--muted); }
+.results { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.section { display: flex; flex-direction: column; gap: 16px; }
+ul.plain { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 8px; max-width: 70ch; }
+footer { font-size: 0.88rem; color: var(--muted); display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 20px; }
+code { font: 0.9em var(--font-data); background: var(--surface); border: 1px solid var(--line); padding: 1px 5px; }
+@media (max-width: 880px) { .viewer, .results { grid-template-columns: minmax(0, 1fr); } #plot { height: 440px; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <span class="eyebrow">Research prototype / early</span>
+    <h1>UNCERTAFACE</h1>
+    <p class="lead">Predict a face from part of a skull, and say how sure the model is, in millimetres.</p>
+    <div class="notice"><strong>Read this first.</strong> The skulls are real, anonymised CT scans. The faces are <strong>synthetic</strong>: an assumed layer of soft tissue, not measured faces. This is not a forensic tool and it does not identify anyone.</div>
+    <div class="links">
+      <a href="https://github.com/Ash19123/UNCERTAFACE" target="_blank" rel="noopener">Code and methodology on GitHub</a>
+      <a href="#results">Results</a>
+      <a href="#limits">What this does not show</a>
+    </div>
+  </header>
+
+  <section class="section" aria-labelledby="try">
+    <h2 id="try">Try it on a skull the model never saw</h2>
+    <p id="intro"></p>
+    <div class="viewer">
+      <div class="stage"><div id="plot" role="img" aria-label="3D view of a real skull with a synthetic face predicted over it"></div></div>
+      <div class="panel">
+        <div class="group"><span class="lab" id="sevlab">How much of the skull is hidden</span>
+          <div class="seg" id="sev" role="group" aria-labelledby="sevlab"></div></div>
+        <div class="group"><label for="grow">Soft tissue grown over the bone</label>
+          <input id="grow" type="range" min="0" max="100" value="100">
+          <div class="row"><button class="btn" id="play" type="button">Grow from bone</button></div></div>
+        <div class="group"><span class="lab" id="modelab">Face colour shows</span>
+          <div class="row" role="group" aria-labelledby="modelab">
+            <button class="btn on" id="m-unc" type="button" aria-pressed="true">Predicted uncertainty</button>
+            <button class="btn" id="m-err" type="button" aria-pressed="false">Actual error</button></div></div>
+        <div class="group"><span class="lab">Show</span>
+          <label class="check"><input type="checkbox" id="c-gt" checked> True face (ghost)</label>
+          <label class="check"><input type="checkbox" id="c-pts" checked> Points the model received</label></div>
+        <div class="group"><span class="lab" id="camlab">Camera</span>
+          <div class="row" role="group" aria-labelledby="camlab">
+            <button class="btn" data-cam="front" type="button">Front</button>
+            <button class="btn on" data-cam="side" type="button">Side</button>
+            <button class="btn" data-cam="oblique" type="button">Oblique</button></div></div>
+        <dl class="readout" id="readout"></dl>
+        <p class="note">Grey bone was given to the model. Orange bone was hidden from it. The last frame of the slider is the model's real prediction; the growth before it is a straight-line interpolation from the bone surface, drawn for display.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="results" aria-labelledby="res">
+    <h2 id="res">How well does it work?</h2>
+    <p id="resSummary"></p>
+    <div class="results">
+      <div class="chartbox"><svg id="bars" viewBox="0 0 540 190" role="img" aria-label="Bar chart of vertex error in millimetres for the model, a no-skull baseline and the best achievable floor"></svg></div>
+      <div class="chartbox scroll"><table id="sevTable"></table></div>
+    </div>
+    <div class="chartbox scroll"><table id="covTable"></table></div>
+    <p class="note" id="covNote"></p>
+  </section>
+
+  <section class="section" aria-labelledby="how">
+    <h2 id="how">How it works</h2>
+    <div class="cols">
+      <div class="card"><h3><span>1</span>A real skull, partly hidden</h3><p>Each training example hides 10 to 85 percent of the bone with realistic patterns: patches, a cap, only the top, only one side, or whole regions. The hidden fraction is measured on the surface, not assumed.</p></div>
+      <div class="card"><h3><span>2</span>Predict a face</h3><p>A point-cloud network reads the visible bone and predicts the position of about 600 face points. A fixed template gives every skull the same vertex layout.</p></div>
+      <div class="card"><h3><span>3</span>Say how unsure</h3><p>For every point the model also predicts a spread in millimetres. That spread is then checked and corrected on separate skulls using conformal calibration.</p></div>
+      <div class="card"><h3><span>4</span>Check against the truth</h3><p>The synthetic face is known exactly, so error and uncertainty can be compared point by point on skulls kept out of training.</p></div>
+    </div>
+  </section>
+
+  <section class="section" id="limits" aria-labelledby="lim">
+    <h2 id="lim">What this does not show</h2>
+    <ul class="plain">
+      <li>The face is invented by this project: the skull plus an assumed soft-tissue thickness, with parts that cannot be inferred from bone on purpose. A model trained on it learns that rule, not real faces.</li>
+      <li>It says nothing about forensic accuracy or identification, and nothing about how real faces vary with age, sex, ancestry or weight.</li>
+      <li id="smallN"></li>
+      <li>One prediction on one skull is an illustration. The tables above are the evidence, and they come with the caveat on sample size.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span><strong>Data.</strong> Skulls: Li J. et al., MUG500+ Repository, Figshare 2021, doi:10.6084/m9.figshare.9616319, licensed CC BY 4.0, and Li J. et al., Data in Brief 2021, doi:10.1016/j.dib.2021.107524. The skull shown here is a reduced-resolution rendering of one scan (<span id="caseId"></span>), unchanged in shape apart from decimation.</span>
+    <span><strong>Code.</strong> MIT licence. <a href="https://github.com/Ash19123/UNCERTAFACE" target="_blank" rel="noopener">github.com/Ash19123/UNCERTAFACE</a></span>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<script>
+const DATA = __DATA__;
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const fmt = (x, d = 1) => (x == null || !isFinite(x)) ? "n/a" : x.toFixed(d);
+  const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const M = DATA.metrics, C = DATA.counts;
+  const probabilistic = DATA.observations[DATA.severities[0]].unc != null;
+  const state = { sev: DATA.severities.includes("severe") ? "severe" : DATA.severities[0], mode: probabilistic ? "unc" : "err", grow: 100 };
+  const sv = DATA.skull_v, F = DATA.face_faces, SF = DATA.skull_f;
+  const tri = (flat) => { const a = [[], [], []]; for (let n = 0; n < flat.length; n += 3) { a[0].push(flat[n]); a[1].push(flat[n + 1]); a[2].push(flat[n + 2]); } return a; };
+  const [fi, fj, fk] = tri(F), [si, sj, sk] = tri(SF);
+  const col = (arr, k) => arr.map((p) => p[k]);
+  const allPts = sv.concat(DATA.gt, DATA.base);
+  const lo = [0, 1, 2].map((k) => Math.min(...col(allPts, k))), hi = [0, 1, 2].map((k) => Math.max(...col(allPts, k)));
+  let vmax = 1;
+  DATA.severities.forEach((s) => { const o = DATA.observations[s]; vmax = Math.max(vmax, ...(o.unc || []), ...o.err); });
+  vmax = Math.ceil(vmax);
+
+  $("intro").textContent = "This is a held-out skull" + (C ? " (" + C.base_per_split.test + " test skulls were never used for training or tuning)" : "") +
+    ". Choose how much of it is hidden, then watch the model grow a face over the bone it can see.";
+  $("caseId").textContent = DATA.case || "one case";
+
+  function posFor(o) { const l = state.grow / 100; return o.pred.map((p, n) => [0, 1, 2].map((k) => DATA.base[n][k] + l * (p[k] - DATA.base[n][k]))); }
+  function hoverFor(o) { return o.err.map((e, n) => "error " + e.toFixed(1) + " mm" + (o.unc ? "<br>predicted uncertainty " + o.unc[n].toFixed(1) + " mm" : "")); }
+  function valsFor(o) { return state.mode === "unc" && o.unc ? o.unc : o.err; }
+
+  const o0 = DATA.observations[state.sev], p0 = posFor(o0);
+  const traces = [
+    { type: "mesh3d", x: col(sv, 0), y: col(sv, 1), z: col(sv, 2), i: si, j: sj, k: sk, intensity: o0.vis.map((v) => 1 - v), cmin: 0, cmax: 1,
+      colorscale: [[0, "#a9b1ba"], [1, "#e8a15a"]], showscale: false, flatshading: false, hoverinfo: "skip", name: "skull",
+      lighting: { ambient: 0.62, diffuse: 0.8, specular: 0.15, roughness: 0.9 } },
+    { type: "mesh3d", x: col(DATA.gt, 0), y: col(DATA.gt, 1), z: col(DATA.gt, 2), i: fi, j: fj, k: fk, color: "#9aa7b2", opacity: 0.16, hoverinfo: "skip", name: "true face" },
+    { type: "mesh3d", x: col(p0, 0), y: col(p0, 1), z: col(p0, 2), i: fi, j: fj, k: fk, intensity: valsFor(o0), cmin: 0, cmax: vmax, colorscale: "Viridis",
+      text: hoverFor(o0), hoverinfo: "text", name: "predicted face", lighting: { ambient: 0.6, diffuse: 0.8 },
+      colorbar: { title: { text: "mm" }, len: 0.55, thickness: 12, x: 1.0, xanchor: "right" } },
+    { type: "scatter3d", mode: "markers", x: col(o0.points, 0), y: col(o0.points, 1), z: col(o0.points, 2), marker: { size: 1.6, color: "#111" }, hoverinfo: "skip", name: "points given to the model" }
+  ];
+  const cams = { front: { eye: { x: 0.05, y: 2.4, z: 0.3 } }, side: { eye: { x: 2.4, y: 0.35, z: 0.25 } }, oblique: { eye: { x: 1.6, y: 1.8, z: 0.7 } } };
+  const layout = { margin: { l: 0, r: 0, t: 0, b: 0 }, paper_bgcolor: "rgba(0,0,0,0)", showlegend: false,
+    scene: { aspectmode: "data", camera: Object.assign({ up: { x: 0, y: 0, z: 1 } }, cams.side),
+      xaxis: { visible: false, range: [lo[0], hi[0]] }, yaxis: { visible: false, range: [lo[1], hi[1]] }, zaxis: { visible: false, range: [lo[2], hi[2]] },
+      bgcolor: "rgba(0,0,0,0)" } };
+  Plotly.newPlot("plot", traces, layout, { displayModeBar: false, responsive: true });
+  function themeFonts() { Plotly.restyle("plot", { "colorbar.tickfont.color": cssVar("--fg"), "colorbar.title.font.color": cssVar("--fg") }, [2]); }
+  themeFonts();
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => setTimeout(themeFonts, 50));
+  new MutationObserver(() => setTimeout(themeFonts, 50)).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  function render() {
+    const o = DATA.observations[state.sev], p = posFor(o);
+    Plotly.restyle("plot", { x: [col(p, 0)], y: [col(p, 1)], z: [col(p, 2)], intensity: [valsFor(o)], text: [hoverFor(o)] }, [2]);
+    Plotly.restyle("plot", { intensity: [o.vis.map((v) => 1 - v)] }, [0]);
+    Plotly.restyle("plot", { x: [col(o.points, 0)], y: [col(o.points, 1)], z: [col(o.points, 2)], visible: $("c-pts").checked }, [3]);
+    Plotly.restyle("plot", { visible: $("c-gt").checked }, [1]);
+    const rows = [["Bone hidden from the model", fmt(o.missing_fraction * 100, 0) + " %"],
+      ["Error of this predicted face", fmt(o.rmse) + " mm"], ["Error if no skull is used (average face)", fmt(o.baseline_rmse) + " mm"]];
+    if (o.mean_unc != null) rows.push(["Average predicted uncertainty", fmt(o.mean_unc) + " mm"]);
+    rows.push(["Occlusion pattern", o.pattern], ["Points received", String(o.n_points)]);
+    $("readout").innerHTML = rows.map((r) => "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>").join("");
+    document.querySelectorAll("#sev button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sev === state.sev));
+  }
+  const sevBox = $("sev");
+  DATA.severities.forEach((s) => { const o = DATA.observations[s], b = document.createElement("button");
+    b.type = "button"; b.dataset.sev = s; b.innerHTML = fmt(o.missing_fraction * 100, 0) + " % hidden<small>" + s + "</small>";
+    b.addEventListener("click", () => { state.sev = s; render(); }); sevBox.appendChild(b); });
+  $("grow").addEventListener("input", (e) => { state.grow = +e.target.value; render(); });
+  $("c-gt").addEventListener("change", render); $("c-pts").addEventListener("change", render);
+  function setMode(m) { state.mode = m; $("m-unc").classList.toggle("on", m === "unc"); $("m-err").classList.toggle("on", m === "err");
+    $("m-unc").setAttribute("aria-pressed", m === "unc"); $("m-err").setAttribute("aria-pressed", m === "err"); render(); }
+  if (!probabilistic) { $("m-unc").disabled = true; }
+  $("m-unc").addEventListener("click", () => setMode("unc")); $("m-err").addEventListener("click", () => setMode("err"));
+  document.querySelectorAll("[data-cam]").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("[data-cam]").forEach((x) => x.classList.toggle("on", x === b));
+    Plotly.relayout("plot", { "scene.camera": Object.assign({ up: { x: 0, y: 0, z: 1 } }, cams[b.dataset.cam]) }); }));
+  $("play").addEventListener("click", () => {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { state.grow = 100; $("grow").value = 100; render(); return; }
+    const t0 = performance.now(), dur = 2600;
+    (function step(now) { const u = Math.min(1, (now - t0) / dur), e = u * u * (3 - 2 * u); state.grow = Math.round(100 * e); $("grow").value = state.grow; render(); if (u < 1) requestAnimationFrame(step); })(t0);
+  });
+  setMode(state.mode);
+
+  // ---- results (all numbers come from saved evaluation files) ----
+  const sumEl = $("resSummary");
+  if (M && M.model_rmse != null && M.baseline_rmse != null) {
+    const d = (M.baseline_rmse - M.model_rmse) / M.baseline_rmse * 100, better = M.model_rmse < M.baseline_rmse;
+    let s = "On held-out skulls the model's average face error is " + fmt(M.model_rmse, 2) + " mm. Predicting the average face with no skull evidence gives " + fmt(M.baseline_rmse, 2) +
+      " mm, so the model is " + fmt(Math.abs(d), 0) + " percent " + (better ? "lower" : "higher") + ".";
+    if (M.floor_rmse != null && better) { const g = (M.baseline_rmse - M.model_rmse) / (M.baseline_rmse - M.floor_rmse) * 100; s += " The floor for this synthetic task, even with a complete skull, is " + fmt(M.floor_rmse, 2) + " mm; the model closes " + fmt(g, 0) + " percent of the gap to it."; }
+    sumEl.textContent = s;
+    const bars = [["Model", M.model_rmse, "var(--accent)"], ["No skull (average face)", M.baseline_rmse, "var(--muted)"]];
+    if (M.floor_rmse != null) bars.push(["Floor (complete skull)", M.floor_rmse, "var(--warn)"]);
+    const mx = Math.max(...bars.map((b) => b[1])) * 1.12, W = 540, L = 170, R = 52, bw = W - L - R, h = 34, gap = 16;
+    let svg = "<text class='mono axis' x='0' y='16' font-size='11'>VERTEX ERROR, MILLIMETRES (LOWER IS BETTER)</text>";
+    bars.forEach((b, n) => { const y = 34 + n * (h + gap), w = b[1] / mx * bw;
+      svg += "<text x='0' y='" + (y + 22) + "' font-size='14'>" + b[0] + "</text><rect x='" + L + "' y='" + y + "' width='" + w.toFixed(1) + "' height='" + h + "' fill='" + b[2] + "'/>" +
+        "<text class='mono' x='" + (L + w + 8).toFixed(1) + "' y='" + (y + 22) + "' font-size='14'>" + fmt(b[1], 2) + "</text>"; });
+    $("bars").innerHTML = svg;
+  } else { sumEl.textContent = "Evaluation results are not available for this model."; }
+  if (M && M.by_severity) {
+    const rows = DATA.severities.filter((s) => M.by_severity[s] != null).map((s) => "<tr><td>" + s + "</td><td>" + fmt(M.by_severity[s], 2) + "</td></tr>").join("");
+    $("sevTable").innerHTML = "<tr><th>Hidden bone</th><th>Face error (mm)</th></tr>" + rows;
+  }
+  if (M && M.coverage) {
+    const rows = ["50", "80", "90", "95"].map((l) => { const c = M.coverage[l];
+      return "<tr><td>" + fmt(c.nominal * 100, 0) + " %</td><td>" + fmt(c.raw * 100, 1) + " %</td><td>" + fmt(c.calibrated * 100, 1) + " %</td><td>" + fmt(c.raw_simultaneous * 100, 1) + " %</td></tr>"; }).join("");
+    $("covTable").innerHTML = "<tr><th>Promised coverage</th><th>Raw model</th><th>After calibration</th><th>Whole face inside (raw)</th></tr>" + rows;
+    $("covNote").textContent = "Coverage is the share of true face coordinates that fall inside the predicted interval. A 90 percent interval should contain about 90 percent. Calibration is fitted on separate skulls and never sees the test skulls. The last column asks for every point of a face to be inside at once, which is much stricter and is not what the other columns measure.";
+  }
+  $("smallN").textContent = C ? ("This early run uses " + (C.independent_base_geometries) + " real skulls in total: " + C.base_per_split.train + " for training, " + C.base_per_split.validation + " for choosing the model, " + C.base_per_split.calibration + " for calibration and " + C.base_per_split.test + " for testing. Held-out sets this small give wide uncertainty on every number here.") : "The number of skulls is small, so every number here is uncertain.";
+  render();
+})();
+</script>
