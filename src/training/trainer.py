@@ -96,6 +96,16 @@ class Trainer:
         mcfg = copy.deepcopy(cfg["model"])
         mcfg["use_missing_info"] = bool(mcfg["use_missing_info"] and d["use_missing_info"])
         self.model = UncertaFace(mcfg, template, self.norm.scale).to(self.device)
+        self.init_info = None
+        if r.get("init_from"):
+            # warm start: weights only (no optimiser/epoch state); the variance head, absent
+            # from a deterministic checkpoint, keeps its fresh initialisation
+            state = ck.load_checkpoint(r["init_from"], self.device)["model"]
+            res = self.model.load_state_dict(state, strict=False)
+            bad = [k for k in list(res.missing_keys) + list(res.unexpected_keys) if not k.startswith("head.raw")]
+            if bad:
+                raise ValueError(f"init_from checkpoint does not match the model: {bad}")
+            self.init_info = dict(path=str(r["init_from"]), fresh_params=list(res.missing_keys))
         self.loss_fn = CompositeLoss(cfg["loss"], MeshOps(faces), self.norm.scale).to(self.device)
         o = cfg["optim"]
         self.opt = torch.optim.AdamW(self.model.parameters(), lr=o["lr"], weight_decay=o["weight_decay"])
@@ -320,7 +330,7 @@ class Trainer:
                    model_params=self.model.num_parameters(), model=self.cfg["model"], loss=self.cfg["loss"],
                    optim=self.cfg["optim"], augmentation=self.cfg["augmentation"], data=self.cfg["data"],
                    checkpoint=dict(best=str(best_p), latest=str(self.run_dir / "latest.pt")),
-                   normalizer=self.norm.to_dict(), best_validation_metrics=final_val,
+                   normalizer=self.norm.to_dict(), best_validation_metrics=final_val, init_from=self.init_info,
                    all_warnings=[dict(epoch=h["epoch"], warnings=h["warnings"]) for h in self.history if h.get("warnings")])
         (self.run_dir / "experiment.json").write_text(json.dumps(exp, indent=2))
         return exp

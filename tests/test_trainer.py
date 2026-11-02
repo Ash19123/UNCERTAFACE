@@ -120,6 +120,23 @@ def test_deterministic_variant_and_reproducibility(tmp_path, data_root):
     assert a.history[0]["train_loss"] == pytest.approx(b.history[0]["train_loss"], rel=1e-5)
 
 
+def test_warm_start_from_deterministic_checkpoint(tmp_path, data_root):
+    det = tr.Trainer(cfg_for(data_root, tmp_path, "w_det", "model.probabilistic=false", "optim.epochs=1"))
+    det.fit(log=lambda *_: None)
+    c = cfg_for(data_root, tmp_path, "w_prob", f"run.init_from={json.dumps(str(tmp_path / 'w_det/best.pt'))}")
+    t = tr.Trainer(c)
+    ref = ck.load_checkpoint(tmp_path / "w_det/best.pt")["model"]
+    for k in ("decoder.template", "head.mean.weight", "decoder.vert_embed"):
+        assert torch.equal(t.model.state_dict()[k].cpu(), ref[k].cpu()), k
+    assert t.init_info["fresh_params"] and all(p.startswith("head.raw") for p in t.init_info["fresh_params"])
+    t.fit(log=lambda *_: None)
+    assert json.loads((tmp_path / "w_prob/experiment.json").read_text())["init_from"]["fresh_params"]
+    bad = tmp_path / "bad.pt"
+    ck.save_checkpoint(bad, {"model": {"nonsense": torch.zeros(1)}})
+    with pytest.raises(ValueError):
+        tr.Trainer(cfg_for(data_root, tmp_path, "w_bad", f"run.init_from={json.dumps(str(bad))}"))
+
+
 def test_checkpoint_roundtrip_is_atomic(tmp_path):
     p = tmp_path / "x.pt"
     ck.save_checkpoint(p, {"a": torch.arange(3), "rng": ck.rng_state()})

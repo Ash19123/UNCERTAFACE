@@ -5,6 +5,7 @@ run:
   data_root: UNCERTAFACE_DATA
   out_dir: experiments/runs
   resume: true                # continue from latest.pt if it exists
+  init_from: null             # path to a checkpoint whose model weights initialise this run (warm start)
   device: auto                # auto | cpu | cuda
   tensorboard: true
 
