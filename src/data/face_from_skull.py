@@ -133,12 +133,22 @@ def thickness(x, z, p: dict, t_min: float = 1.0):
     return np.maximum(t, t_min)
 
 
-def build_face(skull_ref: np.ndarray, p: dict, t_min: float = 1.0) -> dict:
-    """Face for a skull given in the reference frame (scaled coords). Returns base, face, thickness, faces (ref frame)."""
+def envelope_base(skull_ref: np.ndarray) -> dict:
+    """Bone-side base surface of the face for a skull (reference-frame coords): base verts, triangles, mask, normals."""
     H, xr, zr = front_envelope(skull_ref)
     base, mask = sample_on_grid(H, xr, zr)
     faces = grid_triangles(mask)
     n = mu.vertex_normals(base, faces)
     n[n[:, 1] < 0] *= -1                                       # frontal patch: normals must point anteriorly
-    t = thickness(base[:, 0], base[:, 2], p, t_min)
-    return dict(base=base, face=base + n * t[:, None], thickness=t, faces=faces, mask=mask)
+    return dict(base=base, faces=faces, mask=mask, normals=n)
+
+
+def apply_thickness(b: dict, p: dict, t_min: float = 1.0) -> dict:
+    """Face = base + t * n for the face latents ``p`` over a precomputed ``envelope_base``."""
+    t = thickness(b["base"][:, 0], b["base"][:, 2], p, t_min)
+    return dict(base=b["base"], face=b["base"] + b["normals"] * t[:, None], thickness=t, faces=b["faces"], mask=b["mask"])
+
+
+def build_face(skull_ref: np.ndarray, p: dict, t_min: float = 1.0) -> dict:
+    """Face for a skull given in the reference frame (scaled coords). Returns base, face, thickness, faces (ref frame)."""
+    return apply_thickness(envelope_base(skull_ref), p, t_min)

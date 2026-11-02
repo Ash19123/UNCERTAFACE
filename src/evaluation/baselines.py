@@ -17,9 +17,12 @@ from ..data import preprocessing as pp
 from . import reconstruction_metrics as rm
 
 
-def mean_template_metrics(root="UNCERTAFACE_DATA") -> dict:
+def mean_template_metrics(root="UNCERTAFACE_DATA_REAL") -> dict:
     root = Path(root)
-    norm = pp.Normalizer.load(root / "metadata/normalizer.json")
+    nfile = root / "metadata/normalizer.json"
+    if not nfile.exists():                       # the trainer saves one per run; here fit on the train split
+        pp.fit_normalizer_from_train(root).save(nfile)
+    norm = pp.Normalizer.load(nfile)
     tpl = norm.inverse(ds.fit_template(root, norm, pp.read_split(root, "train")["base_ids"]))
     faces = np.load(root / "processed/correspondence/correspondence.npz")["face_faces"]
     out = {}

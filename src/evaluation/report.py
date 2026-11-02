@@ -25,7 +25,7 @@ def _md(rows, cols, fmt="{:.2f}"):
     return "\n".join(out)
 
 
-def build_report(main: str, ensemble: str | None = None, reports="reports", data_root="UNCERTAFACE_DATA") -> str:
+def build_report(main: str, ensemble: str | None = None, reports="reports", data_root="UNCERTAFACE_DATA_REAL") -> str:
     R = Path(reports)
     L = ["# UNCERTAFACE results (SYNTHETIC data only)", "",
          "> Every number below is read from saved JSON produced by the code in this repository. Results are for a "

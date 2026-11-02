@@ -2,7 +2,7 @@
 run:
   name: baseline
   seed: 0
-  data_root: UNCERTAFACE_DATA
+  data_root: UNCERTAFACE_DATA_REAL   # real skulls + synthetic faces (use UNCERTAFACE_DATA for the procedural toy world)
   out_dir: experiments/runs
   resume: true                # continue from latest.pt if it exists
   init_from: null             # path to a checkpoint whose model weights initialise this run (warm start)

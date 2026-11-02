@@ -9,3 +9,5 @@ tqdm>=4.66
 tensorboard>=2.15
 pytest>=8.0
 # optional: open3d, pyvista
+# only for scripts/fetch_mug500.py (real-skull download)
+remotezip>=0.12
