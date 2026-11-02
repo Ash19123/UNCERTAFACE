@@ -1,0 +1,20 @@
+model:
+  use_missing_info: true         # feed missing fraction + local-density feature (ablation switch)
+  probabilistic: true            # false -> deterministic baseline (mean only)
+  encoder:
+    name: pointnetpp             # "pointnet" (baseline) or "pointnetpp" (hierarchical, multi-scale)
+    m1: 256                      # level-1 centroids (FPS)
+    m2: 64                       # level-2 centroids = number of local tokens
+    k1: [16, 32]                 # multi-scale neighbourhood sizes, level 1
+    k2: [16, 32]                 # level 2
+  aggregation:
+    d_model: 128
+    n_freq: 6                    # Fourier positional-encoding bands
+  decoder:
+    n_layers: 2
+    n_heads: 4
+    vert_embed_dim: 16           # learned per-template-vertex embedding
+    self_attention: true
+  head:
+    std_bounds_mm: [0.1, 25.0]   # hard bounds on predicted per-axis std, in millimetres
+    init_std_mm: 3.0
