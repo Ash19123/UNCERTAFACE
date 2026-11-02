@@ -1,5 +1,13 @@
-# Training configuration. Only sections for implemented modules are present;
-# optimiser / loss / schedule settings are added with the trainer.
+# Training configuration (merged with configs/model.yaml -> `model` by the trainer).
+run:
+  name: baseline
+  seed: 0
+  data_root: UNCERTAFACE_DATA
+  out_dir: experiments/runs
+  resume: true                # continue from latest.pt if it exists
+  device: auto                # auto | cpu | cuda
+  tensorboard: true
+
 data:
   n_points: 1024              # fixed input size; clouds are subsampled or zero-padded (mask marks real points)
   knn_k: 8                    # neighbourhood size for the local-density feature
@@ -15,3 +23,37 @@ augmentation:                 # applied to TRAIN only; geometry transforms act o
   density_keep: [0.6, 1.0]    # keep-fraction when changing sampling density
   occlusion_prob: 0.3         # chance of an extra cap occlusion (input only)
   occlusion_fraction: [0.05, 0.15]   # fraction of points removed by that cap
+
+optim:
+  epochs: 60
+  batch_size: 16
+  lr: 1.0e-3
+  weight_decay: 1.0e-2
+  warmup_epochs: 3
+  min_lr_frac: 0.02           # cosine decays to lr * this
+  grad_clip: 1.0
+  amp: false                  # fp16 autocast (CUDA only)
+  num_workers: 0
+
+loss:
+  reconstruction: mse         # mse | mae | chamfer
+  lambda_rec: 1.0             # l1
+  lambda_nll: 1.0             # l2 (ignored by the deterministic model)
+  lambda_surface: 0.1         # l3
+  lambda_reg: 0.0             # l4 (log-variance smoothness)
+  nll_beta: 0.0               # >0 -> beta-NLL
+  nll_warmup_epochs: 5        # NLL weight ramps 0 -> 1 over these epochs
+  unit_mm: 10.0               # losses are evaluated in these length units
+  surface_weights: {laplacian: 1.0, edge: 1.0, normal: 0.1}
+
+early_stopping:
+  monitor: val_loss           # any key of the validation metrics (lower is better)
+  patience: 15
+  min_delta: 0.0
+
+monitors:                     # thresholds for the warnings recorded in history.json
+  grad_norm_warn: 100.0
+  collapse_frac: 0.5          # fraction of predicted stds within 5% of the lower bound
+  inflation_frac: 0.5         # ... of the upper bound
+  overfit_patience: 5         # val_loss rising this many epochs while train_loss falls
+  max_nonfinite_steps: 5      # abort after this many consecutive non-finite losses

@@ -53,11 +53,13 @@ class UncertafaceDataset(Dataset):
 
     def __init__(self, root, split: str, norm: Normalizer, n_points: int = 1024, knn_k: int = 8,
                  aug_cfg: dict | None = None, augment: bool = False, use_missing_info: bool = True,
-                 seed: int = 0):
+                 seed: int = 0, cache: bool = True):
         self.root, self.norm = Path(root), norm
         self.records = read_records(root, split)
         if not self.records:
             raise ValueError(f"no samples in split {split!r}")
+        # raw (mm) arrays are small; cache them to avoid re-reading .npz files every epoch
+        self._cache = [load_sample(self.root, r) for r in self.records] if cache else None
         self.n_points, self.knn_k, self.use_missing_info, self.seed, self.epoch = n_points, knn_k, use_missing_info, seed, 0
         self.augmenter = Augmenter(aug_cfg) if (augment and aug_cfg and aug_cfg.get("enabled", True)) else None
 
@@ -69,7 +71,7 @@ class UncertafaceDataset(Dataset):
 
     def __getitem__(self, i: int) -> dict:
         rec = self.records[i]
-        s = load_sample(self.root, rec)                       # mm, float32
+        s = self._cache[i] if self._cache is not None else load_sample(self.root, rec)  # mm, float32
         rng = np.random.default_rng(np.random.SeedSequence(
             [self.seed, i, self.epoch if self.augmenter else 0]))
         pts_mm, face_mm, miss = s["points_mm"], s["face_mm"], s["missing_fraction"]
