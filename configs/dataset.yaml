@@ -1,0 +1,67 @@
+# Dataset configuration. Only parameters for implemented modules are listed;
+# generator shape/thickness ranges are added together with generator.py.
+dataset:
+  version: "0.1.0"
+  synthetic: true            # every sample is procedurally generated, never real anatomy
+  units: "mm"
+  seed: 20240
+  n_base: 300                # independent base geometries (subjects)
+  obs_per_base: 4            # incomplete observations per base (severities cycled)
+
+mesh:
+  cranium_subdivisions: 4    # icosphere levels -> 2562 vertices
+  face_subdivisions: 4       # face template shares topology with its skull region
+  area_eps: 1.0e-12          # faces below this area are degenerate
+
+# Procedural generator. All ranges are [low, high], sampled uniformly and
+# independently. Values are ASSUMED research-prototype values, not clinical
+# measurements. Lengths/thicknesses in mm; "amp" values are fractions of local
+# radius. See docs/GENERATOR.md for the geometric model and its limitations.
+generator:
+  skull:
+    semi_width:  [62.0, 76.0]    # x semi-axis (left-right)
+    semi_length: [80.0, 95.0]    # y semi-axis (front-back, +y anterior)
+    semi_height: [60.0, 72.0]    # z semi-axis (+z superior)
+    forehead_bulge:  [0.00, 0.08]
+    occipital_bulge: [0.00, 0.08]
+    brow_ridge:      [0.00, 0.06]
+    zygomatic:       [0.00, 0.08]
+    chin_projection: [0.00, 0.10]
+    jaw_width:       [0.00, 0.10]
+    nasal_aperture_depth: [0.03, 0.09]
+    field_amp:   [0.00, 0.03]    # smooth random radial field (fraction of radius)
+    asymmetry:   [0.00, 1.00]    # weight of the left-right antisymmetric part of the field
+  face:                          # independent of bone: irreducible from skull alone
+    thickness_scale: [0.75, 1.30]   # global soft-tissue scale
+    thickness_field_amp: [0.00, 0.15]
+    nose_projection: [0.0, 12.0]    # mm along surface normal
+    lip_fullness:    [0.0, 4.0]
+    cheek_fat:       [0.0, 8.0]
+    unobserved_field_amp: [0.0, 3.0]  # mm, smooth random field
+  min_thickness_mm: 1.0
+
+observation:                 # how incomplete, noisy point clouds are made from a skull
+  patterns: [patchy, cap, upper, lateral, region]
+  dense_reference_points: 20000   # independent area-uniform cloud used to MEASURE missing fraction
+  max_tries: 30                   # resample target if measured fraction leaves its bin
+  noise_sigma_mm: [0.0, 1.5]      # isotropic Gaussian coordinate noise
+  outlier_fraction: [0.0, 0.02]   # fraction of points given a larger random displacement
+  outlier_scale_mm: 5.0
+  density_kappa: [0.0, 2.0]       # irregular sampling: acceptance ~ exp(kappa * (d.u - 1))
+  samplers: [area, fps]
+
+sampling:
+  point_counts: [1024, 2048, 4096]
+  methods: [area, vertex, fps]
+
+splits:                      # fractions of independent BASE geometries
+  train: 0.70
+  validation: 0.10
+  calibration: 0.10
+  test: 0.10
+
+missingness_bins:            # measured area fraction removed, [low, high]
+  mild: [0.10, 0.20]
+  moderate: [0.30, 0.45]
+  severe: [0.50, 0.70]
+  extreme: [0.70, 0.85]

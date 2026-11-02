@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+# generated data and training outputs are reproducible from the seed/config
+UNCERTAFACE_DATA/
+/data/
+checkpoints/
+experiments/runs/
+*.pt
+*.pth
