@@ -1,0 +1,56 @@
+{
+  "run": "experiments/runs/deterministic",
+  "sample_id": "B0009_O00",
+  "reveal": "front",
+  "steps": [
+    {
+      "name": "template (no skull)",
+      "missing_fraction": 1.0,
+      "rmse_mm": 3.419853104469496,
+      "n_points": 0,
+      "mean_uncertainty_mm": null
+    },
+    {
+      "name": "85% of skull missing",
+      "missing_fraction": 0.85,
+      "rmse_mm": 2.9485771358164796,
+      "n_points": 1024,
+      "mean_uncertainty_mm": null
+    },
+    {
+      "name": "70% of skull missing",
+      "missing_fraction": 0.7,
+      "rmse_mm": 2.9786573342694522,
+      "n_points": 1024,
+      "mean_uncertainty_mm": null
+    },
+    {
+      "name": "55% of skull missing",
+      "missing_fraction": 0.55,
+      "rmse_mm": 2.8305335705996946,
+      "n_points": 1024,
+      "mean_uncertainty_mm": null
+    },
+    {
+      "name": "40% of skull missing",
+      "missing_fraction": 0.4,
+      "rmse_mm": 3.1417594600385703,
+      "n_points": 1024,
+      "mean_uncertainty_mm": null
+    },
+    {
+      "name": "25% of skull missing",
+      "missing_fraction": 0.25,
+      "rmse_mm": 3.1698585716697996,
+      "n_points": 1024,
+      "mean_uncertainty_mm": null
+    },
+    {
+      "name": "10% of skull missing",
+      "missing_fraction": 0.1,
+      "rmse_mm": 3.739032657923889,
+      "n_points": 1024,
+      "mean_uncertainty_mm": null
+    }
+  ]
+}
