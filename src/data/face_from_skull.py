@@ -26,8 +26,8 @@ from scipy.ndimage import distance_transform_edt, gaussian_filter, grey_closing,
 from . import mesh_utils as mu
 
 FACE_STEP = 3.0                                   # grid spacing (mm); v1 used 5 mm (603 vertices)
-FACE_X = np.arange(-57.0, 57.1, FACE_STEP)
-FACE_Z = np.arange(30.0, -129.1, -FACE_STEP)
+FACE_X = np.arange(-72.0, 72.1, FACE_STEP)
+FACE_Z = np.arange(39.0, -135.1, -FACE_STEP)
 RES = 1.5
 
 
@@ -51,7 +51,7 @@ def _disk(radius_mm: float, res: float):
     return (xx ** 2 + yy ** 2) <= r * r
 
 
-def front_envelope(verts: np.ndarray, close_mm: float = 22.0, dilate_mm: float = 18.0, smooth_mm: float = 9.0,
+def front_envelope(verts: np.ndarray, close_mm: float = 22.0, dilate_mm: float = 11.0, smooth_mm: float = 7.0,
                    res: float = RES):
     """Closed, dilated and smoothed front-most surface; returns ``(H, xr, zr)`` (H indexed [z, x], mm).
 
@@ -93,7 +93,7 @@ def sample_on_grid(H, xr, zr, res: float = RES):
 
 def oval_mask(X, Z):
     """Face outline: an oval over the frontal bone, midface and chin (reference-frame mm)."""
-    return (X / 58.0) ** 2 + ((Z + 50.0) / 82.0) ** 2 <= 1.0
+    return (X / 70.0) ** 2 + ((Z + 48.0) / 86.0) ** 2 <= 1.0
 
 
 def grid_triangles(mask: np.ndarray):
@@ -202,6 +202,9 @@ def thickness(x, z, p: dict, t_min: float = 1.0):
     t += feature_relief(x, z, p)
     t += p["cheek_fat"] * np.maximum(_bump(x, z, 42.0, -64.0, 14.0), _bump(x, z, -42.0, -64.0, 14.0))
     t += p["unobserved_field_amp"] * u
+    r = np.sqrt((x / 70.0) ** 2 + ((z + 48.0) / 86.0) ** 2)
+    w = np.clip((r - 0.80) / 0.20, 0.0, 1.0)
+    t = t * (1.0 - 0.55 * w * w * (3 - 2 * w))        # taper toward the rim so the face hugs the skull
     return np.maximum(t, t_min)
 
 

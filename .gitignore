@@ -24,3 +24,9 @@ real_*.err
 UNCERTAFACE_DATA_REAL_v1/
 /reports_v1/
 /demo/_proto/
+UNCERTAFACE_DATA_REAL_v2/
+reports_v2/
+/demo/site/
+/shots_v3/
+*.err
+fetch.done

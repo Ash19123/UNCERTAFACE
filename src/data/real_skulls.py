@@ -138,7 +138,8 @@ def prepare_case(stl_path, ref_verts: np.ndarray, target_verts: int = REF_TARGET
     Raises ``ValueError`` if the alignment residual exceeds ``max_rms`` mm or the fitted scale is implausible
     (a free-scale ICP can shrink a corrupt mesh onto the reference, so the residual alone is not enough).
     """
-    v, f, cell = decimate(read_stl(stl_path), target_verts)
+    tri = stl_path if isinstance(stl_path, np.ndarray) else read_stl(stl_path)      # path, or (n, 3, 3) triangles
+    v, f, cell = decimate(tri, target_verts)
     v, f, n_small = keep_main_parts(v, f)
     s, R, t, rms = align_to_reference(v, ref_verts)
     if rms > max_rms or not (scale_range[0] <= s <= scale_range[1]):
