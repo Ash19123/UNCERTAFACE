@@ -4,26 +4,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* Layout concept: an instrument panel. A 3D viewer with its controls sits first, then a reading column that
-   states the numbers, the limits and the credits. Cool slate neutrals, one teal accent for the model,
-   amber for caution and for the bone the model cannot see. */
+/* Layout concept: an instrument panel on white. Pure black type, rules and active states; greys only for the data. */
 :root {
-  --bg: #f1f4f6; --surface: #ffffff; --fg: #12202b; --muted: #546473; --line: #d3dce3;
-  --accent: #0a7c76; --accent-fg: #ffffff; --warn: #a85a05; --warn-bg: #fbf0e0; --viewer: #e8edf1;
+  color-scheme: light;
+  --bg: #ffffff; --surface: #ffffff; --fg: #000000; --muted: #4d4d4d; --line: #000000; --rule: #e2e2e2;
+  --accent: #000000; --accent-fg: #ffffff; --warn: #000000; --warn-bg: #f2f2f2; --viewer: #050505;
   --font-body: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-data: "Spline Sans Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0c1318; --surface: #131c23; --fg: #e5edf2; --muted: #92a3b1; --line: #25333e;
-    --accent: #3fc7bd; --accent-fg: #052321; --warn: #f0a458; --warn-bg: #2a2013; --viewer: #090f13;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0c1318; --surface: #131c23; --fg: #e5edf2; --muted: #92a3b1; --line: #25333e;
-  --accent: #3fc7bd; --accent-fg: #052321; --warn: #f0a458; --warn-bg: #2a2013; --viewer: #090f13;
-  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--font-body); margin: 0;
@@ -34,25 +21,28 @@ h1 { font-size: clamp(2.4rem, 7vw, 4.2rem); font-weight: 800; line-height: 1.02;
 h2 { font-size: 1.55rem; font-weight: 700; line-height: 1.2; }
 h3 { font-size: 1.05rem; font-weight: 700; }
 p { margin: 0; max-width: 68ch; }
-a { color: var(--accent); text-underline-offset: 3px; }
+a { color: var(--fg); text-underline-offset: 3px; text-decoration-thickness: 2px; }
 .eyebrow { font: 500 0.78rem/1 var(--font-data); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
 .lead { font-size: clamp(1.1rem, 2.4vw, 1.4rem); line-height: 1.45; max-width: 44ch; color: var(--fg); }
 .head { display: flex; flex-direction: column; gap: 16px; }
-.notice { background: var(--warn-bg); color: var(--fg); border-left: 4px solid var(--warn); padding: 14px 18px; max-width: 78ch; font-size: 0.97rem; }
+.notice { background: var(--warn-bg); color: var(--fg); border-left: 6px solid #000; padding: 14px 18px; max-width: 78ch; font-size: 0.97rem; }
 .notice strong { color: var(--warn); }
 .links { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 0.95rem; }
 .viewer { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 .stage { background: var(--viewer); border: 1px solid var(--line); min-width: 0; }
-#plot { width: 100%; height: clamp(420px, 68vh, 640px); }
+#plot { width: 100%; height: clamp(520px, 80vh, 780px); }
 .panel { background: var(--surface); border: 1px solid var(--line); padding: 18px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 .group { display: flex; flex-direction: column; gap: 8px; }
 .group > label, .group > .lab { font: 500 0.74rem/1.2 var(--font-data); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
 .seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.seg button, .btn { font: 500 0.88rem/1.2 var(--font-body); padding: 9px 10px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; text-align: left; }
+.seg button:hover, .btn:hover { background: #ededed; }
+.seg button[aria-pressed="true"]:hover, .btn.on:hover { background: #000; }
+.seg button, .btn { font: 500 0.88rem/1.2 var(--font-body); padding: 9px 10px; border: 1px solid var(--line); background: #fff; color: var(--fg); cursor: pointer; text-align: left; }
 .seg button[aria-pressed="true"], .btn.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .seg button small { display: block; font: 400 0.74rem/1.3 var(--font-data); opacity: 0.8; margin-top: 2px; }
 .row { display: flex; flex-wrap: wrap; gap: 6px; }
 input[type="range"] { width: 100%; accent-color: var(--accent); }
+input[type="checkbox"] { accent-color: #000; width: 16px; height: 16px; }
 .check { display: flex; gap: 8px; align-items: center; font-size: 0.92rem; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .readout { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; font-size: 0.92rem; margin: 0; }
@@ -64,7 +54,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .card h3 span { font: 500 0.78rem var(--font-data); color: var(--accent); margin-right: 8px; }
 .scroll { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: 0.92rem; font-variant-numeric: tabular-nums; }
-th, td { text-align: right; padding: 8px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th, td { text-align: right; padding: 8px 12px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; }
 th { font: 500 0.74rem var(--font-data); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 td { font-family: var(--font-data); }
@@ -76,7 +66,7 @@ td { font-family: var(--font-data); }
 .results { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 .section { display: flex; flex-direction: column; gap: 16px; }
 ul.plain { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 8px; max-width: 70ch; }
-footer { font-size: 0.88rem; color: var(--muted); display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 20px; }
+footer { font-size: 0.88rem; color: var(--muted); display: flex; flex-direction: column; gap: 8px; border-top: 2px solid var(--line); padding-top: 20px; }
 code { font: 0.9em var(--font-data); background: var(--surface); border: 1px solid var(--line); padding: 1px 5px; }
 @media (max-width: 880px) { .viewer, .results { grid-template-columns: minmax(0, 1fr); } #plot { height: 440px; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
@@ -108,18 +98,21 @@ code { font: 0.9em var(--font-data); background: var(--surface); border: 1px sol
           <div class="row"><button class="btn" id="play" type="button">Grow from bone</button></div></div>
         <div class="group"><span class="lab" id="modelab">Face colour shows</span>
           <div class="row" role="group" aria-labelledby="modelab">
-            <button class="btn on" id="m-unc" type="button" aria-pressed="true">Predicted uncertainty</button>
+            <button class="btn on" id="m-form" type="button" aria-pressed="true">Face form</button>
+            <button class="btn" id="m-unc" type="button" aria-pressed="false">Predicted uncertainty</button>
             <button class="btn" id="m-err" type="button" aria-pressed="false">Actual error</button></div></div>
         <div class="group"><span class="lab">Show</span>
-          <label class="check"><input type="checkbox" id="c-gt" checked> True face (ghost)</label>
+          <label class="check"><input type="checkbox" id="c-gt"> True face (ghost)</label>
           <label class="check"><input type="checkbox" id="c-pts" checked> Points the model received</label></div>
+        <div class="group"><label for="op">Face opacity (lower shows the skull)</label>
+          <input id="op" type="range" min="0" max="100" value="100"></div>
         <div class="group"><span class="lab" id="camlab">Camera</span>
           <div class="row" role="group" aria-labelledby="camlab">
             <button class="btn" data-cam="front" type="button">Front</button>
-            <button class="btn on" data-cam="side" type="button">Side</button>
-            <button class="btn" data-cam="oblique" type="button">Oblique</button></div></div>
+            <button class="btn" data-cam="side" type="button">Side</button>
+            <button class="btn on" data-cam="oblique" type="button">Oblique</button></div></div>
         <dl class="readout" id="readout"></dl>
-        <p class="note">Grey bone was given to the model. Orange bone was hidden from it. The last frame of the slider is the model's real prediction; the growth before it is a straight-line interpolation from the bone surface, drawn for display.</p>
+        <p class="note">Pale bone was given to the model. Grey bone was hidden from it. The last frame of the slider is the model's real prediction (<span id="nv">1,662</span> vertices, interpolated onto a finer mesh for display); the growth before it is a straight-line interpolation from the bone surface, drawn for display.</p>
       </div>
     </div>
   </section>
@@ -148,7 +141,7 @@ code { font: 0.9em var(--font-data); background: var(--surface); border: 1px sol
   <section class="section" id="limits" aria-labelledby="lim">
     <h2 id="lim">What this does not show</h2>
     <ul class="plain">
-      <li>The face is invented by this project: the skull plus an assumed soft-tissue thickness, with parts that cannot be inferred from bone on purpose. A model trained on it learns that rule, not real faces.</li>
+      <li>The face is invented by this project: the skull plus an assumed soft-tissue thickness, with generic nose, lips, eyes and chin placed at assumed positions, and parts that cannot be inferred from bone on purpose. A model trained on it learns that rule, not real faces.</li>
       <li>It says nothing about forensic accuracy or identification, and nothing about how real faces vary with age, sex, ancestry or weight.</li>
       <li id="smallN"></li>
       <li>One prediction on one skull is an illustration. The tables above are the evidence, and they come with the caveat on sample size.</li>
@@ -170,7 +163,7 @@ const DATA = __DATA__;
   const cssVar = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
   const M = DATA.metrics, C = DATA.counts;
   const probabilistic = DATA.observations[DATA.severities[0]].unc != null;
-  const state = { sev: DATA.severities.includes("severe") ? "severe" : DATA.severities[0], mode: probabilistic ? "unc" : "err", grow: 100 };
+  const state = { sev: DATA.severities.includes("severe") ? "severe" : DATA.severities[0], mode: "form", grow: 100, op: 100 };
   const sv = DATA.skull_v, F = DATA.face_faces, SF = DATA.skull_f;
   const tri = (flat) => { const a = [[], [], []]; for (let n = 0; n < flat.length; n += 3) { a[0].push(flat[n]); a[1].push(flat[n + 1]); a[2].push(flat[n + 2]); } return a; };
   const [fi, fj, fk] = tri(F), [si, sj, sk] = tri(SF);
@@ -183,30 +176,33 @@ const DATA = __DATA__;
 
   $("intro").textContent = "This is a held-out skull" + (C ? " (" + C.base_per_split.test + " test skulls were never used for training or tuning)" : "") +
     ". Choose how much of it is hidden, then watch the model grow a face over the bone it can see.";
+  $("nv").textContent = DATA.n_model_vertices.toLocaleString("en-US");
   $("caseId").textContent = DATA.case || "one case";
 
   function posFor(o) { const l = state.grow / 100; return o.pred.map((p, n) => [0, 1, 2].map((k) => DATA.base[n][k] + l * (p[k] - DATA.base[n][k]))); }
   function hoverFor(o) { return o.err.map((e, n) => "error " + e.toFixed(1) + " mm" + (o.unc ? "<br>predicted uncertainty " + o.unc[n].toFixed(1) + " mm" : "")); }
-  function valsFor(o) { return state.mode === "unc" && o.unc ? o.unc : o.err; }
+  function valsFor(o) { return state.mode === "form" ? o.err.map(() => 0) : (state.mode === "unc" && o.unc ? o.unc : o.err); }
 
+  const SKIN = [[0, "#ebe8e1"], [1, "#ebe8e1"]], GREY = [[0, "#5f5f5f"], [0.5, "#a8a8a8"], [1, "#ffffff"]];
+  const FORM_LIGHT = { ambient: 0.32, diffuse: 0.95, specular: 0.35, roughness: 0.55, fresnel: 0.15 }, DATA_LIGHT = { ambient: 0.55, diffuse: 0.8, specular: 0.2 };
   const o0 = DATA.observations[state.sev], p0 = posFor(o0);
   const traces = [
     { type: "mesh3d", x: col(sv, 0), y: col(sv, 1), z: col(sv, 2), i: si, j: sj, k: sk, intensity: o0.vis.map((v) => 1 - v), cmin: 0, cmax: 1,
-      colorscale: [[0, "#a9b1ba"], [1, "#e8a15a"]], showscale: false, flatshading: false, hoverinfo: "skip", name: "skull",
-      lighting: { ambient: 0.62, diffuse: 0.8, specular: 0.15, roughness: 0.9 } },
-    { type: "mesh3d", x: col(DATA.gt, 0), y: col(DATA.gt, 1), z: col(DATA.gt, 2), i: fi, j: fj, k: fk, color: "#9aa7b2", opacity: 0.16, hoverinfo: "skip", name: "true face" },
-    { type: "mesh3d", x: col(p0, 0), y: col(p0, 1), z: col(p0, 2), i: fi, j: fj, k: fk, intensity: valsFor(o0), cmin: 0, cmax: vmax, colorscale: "Viridis",
-      text: hoverFor(o0), hoverinfo: "text", name: "predicted face", lighting: { ambient: 0.6, diffuse: 0.8 },
+      colorscale: [[0, "#f4f0e6"], [1, "#8a8a8a"]], showscale: false, flatshading: false, hoverinfo: "skip", name: "skull",
+      lighting: { ambient: 0.48, diffuse: 0.95, specular: 0.45, roughness: 0.45, fresnel: 0.25 }, lightposition: { x: 2500, y: 3000, z: 4000 } },
+    { type: "mesh3d", x: col(DATA.gt, 0), y: col(DATA.gt, 1), z: col(DATA.gt, 2), i: fi, j: fj, k: fk, color: "#ffffff", opacity: 0.07, hoverinfo: "skip", name: "true face" },
+    { type: "mesh3d", x: col(p0, 0), y: col(p0, 1), z: col(p0, 2), i: fi, j: fj, k: fk, intensity: valsFor(o0), cmin: 0, cmax: vmax, colorscale: SKIN, opacity: 1, showscale: false,
+      text: hoverFor(o0), hoverinfo: "text", name: "predicted face", lighting: FORM_LIGHT, lightposition: { x: -2200, y: 3200, z: 2600 },
       colorbar: { title: { text: "mm" }, len: 0.55, thickness: 12, x: 1.0, xanchor: "right" } },
-    { type: "scatter3d", mode: "markers", x: col(o0.points, 0), y: col(o0.points, 1), z: col(o0.points, 2), marker: { size: 1.6, color: "#111" }, hoverinfo: "skip", name: "points given to the model" }
+    { type: "scatter3d", mode: "markers", x: col(o0.points, 0), y: col(o0.points, 1), z: col(o0.points, 2), marker: { size: 2.0, color: "#000" }, hoverinfo: "skip", name: "points given to the model" }
   ];
-  const cams = { front: { eye: { x: 0.05, y: 2.4, z: 0.3 } }, side: { eye: { x: 2.4, y: 0.35, z: 0.25 } }, oblique: { eye: { x: 1.6, y: 1.8, z: 0.7 } } };
+  const cams = { front: { eye: { x: 0.05, y: 2.1, z: 0.28 } }, side: { eye: { x: 2.1, y: 0.3, z: 0.22 } }, oblique: { eye: { x: 1.45, y: 1.6, z: 0.42 } } };
   const layout = { margin: { l: 0, r: 0, t: 0, b: 0 }, paper_bgcolor: "rgba(0,0,0,0)", showlegend: false,
-    scene: { aspectmode: "data", camera: Object.assign({ up: { x: 0, y: 0, z: 1 } }, cams.side),
+    scene: { aspectmode: "data", camera: Object.assign({ up: { x: 0, y: 0, z: 1 } }, cams.oblique),
       xaxis: { visible: false, range: [lo[0], hi[0]] }, yaxis: { visible: false, range: [lo[1], hi[1]] }, zaxis: { visible: false, range: [lo[2], hi[2]] },
       bgcolor: "rgba(0,0,0,0)" } };
   Plotly.newPlot("plot", traces, layout, { displayModeBar: false, responsive: true });
-  function themeFonts() { Plotly.restyle("plot", { "colorbar.tickfont.color": cssVar("--fg"), "colorbar.title.font.color": cssVar("--fg") }, [2]); }
+  function themeFonts() { Plotly.restyle("plot", { "colorbar.tickfont.color": "#ffffff", "colorbar.title.font.color": "#ffffff" }, [2]); }
   themeFonts();
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => setTimeout(themeFonts, 50));
   new MutationObserver(() => setTimeout(themeFonts, 50)).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
@@ -228,12 +224,15 @@ const DATA = __DATA__;
   DATA.severities.forEach((s) => { const o = DATA.observations[s], b = document.createElement("button");
     b.type = "button"; b.dataset.sev = s; b.innerHTML = fmt(o.missing_fraction * 100, 0) + " % hidden<small>" + s + "</small>";
     b.addEventListener("click", () => { state.sev = s; render(); }); sevBox.appendChild(b); });
+  $("op").addEventListener("input", (e) => { state.op = +e.target.value; Plotly.restyle("plot", { opacity: state.op / 100 }, [2]); });
   $("grow").addEventListener("input", (e) => { state.grow = +e.target.value; render(); });
   $("c-gt").addEventListener("change", render); $("c-pts").addEventListener("change", render);
-  function setMode(m) { state.mode = m; $("m-unc").classList.toggle("on", m === "unc"); $("m-err").classList.toggle("on", m === "err");
-    $("m-unc").setAttribute("aria-pressed", m === "unc"); $("m-err").setAttribute("aria-pressed", m === "err"); render(); }
+  function setMode(m) { state.mode = m; ["form", "unc", "err"].forEach((k) => { $("m-" + k).classList.toggle("on", m === k); $("m-" + k).setAttribute("aria-pressed", m === k); });
+    const f = m === "form"; state.op = f ? 100 : 70; $("op").value = state.op;
+    Plotly.restyle("plot", { colorscale: [f ? SKIN : GREY], showscale: !f, opacity: state.op / 100, lighting: [f ? FORM_LIGHT : DATA_LIGHT] }, [2]);
+    render(); }
   if (!probabilistic) { $("m-unc").disabled = true; }
-  $("m-unc").addEventListener("click", () => setMode("unc")); $("m-err").addEventListener("click", () => setMode("err"));
+  $("m-form").addEventListener("click", () => setMode("form")); $("m-unc").addEventListener("click", () => setMode("unc")); $("m-err").addEventListener("click", () => setMode("err"));
   document.querySelectorAll("[data-cam]").forEach((b) => b.addEventListener("click", () => {
     document.querySelectorAll("[data-cam]").forEach((x) => x.classList.toggle("on", x === b));
     Plotly.relayout("plot", { "scene.camera": Object.assign({ up: { x: 0, y: 0, z: 1 } }, cams[b.dataset.cam]) }); }));
@@ -252,8 +251,8 @@ const DATA = __DATA__;
       " mm, so the model is " + fmt(Math.abs(d), 0) + " percent " + (better ? "lower" : "higher") + ".";
     if (M.floor_rmse != null && better) { const g = (M.baseline_rmse - M.model_rmse) / (M.baseline_rmse - M.floor_rmse) * 100; s += " The floor for this synthetic task, even with a complete skull, is " + fmt(M.floor_rmse, 2) + " mm; the model closes " + fmt(g, 0) + " percent of the gap to it."; }
     sumEl.textContent = s;
-    const bars = [["Model", M.model_rmse, "var(--accent)"], ["No skull (average face)", M.baseline_rmse, "var(--muted)"]];
-    if (M.floor_rmse != null) bars.push(["Floor (complete skull)", M.floor_rmse, "var(--warn)"]);
+    const bars = [["Model", M.model_rmse, "#000000"], ["No skull (average face)", M.baseline_rmse, "#8c8c8c"]];
+    if (M.floor_rmse != null) bars.push(["Floor (complete skull)", M.floor_rmse, "#cfcfcf"]);
     const mx = Math.max(...bars.map((b) => b[1])) * 1.12, W = 540, L = 170, R = 52, bw = W - L - R, h = 34, gap = 16;
     let svg = "<text class='mono axis' x='0' y='16' font-size='11'>VERTEX ERROR, MILLIMETRES (LOWER IS BETTER)</text>";
     bars.forEach((b, n) => { const y = 34 + n * (h + gap), w = b[1] / mx * bw;

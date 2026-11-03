@@ -116,7 +116,7 @@ def test_envelope_bridges_a_hole_and_face_geometry():
     assert H[i, j] > 70                                           # hole bridged (raw would fall back to y=20)
     p = {k: v for k, v in gen.sample_params(np.random.default_rng(0), DCFG["generator"]).items() if k in FACE_KEYS}
     out = ffs.build_face(np.vstack([plate, back]), p)
-    assert out["face"].shape == out["base"].shape and 500 < len(out["face"]) < 800
+    assert out["face"].shape == out["base"].shape and 1400 < len(out["face"]) < 1900
     off = out["face"] - out["base"]
     assert np.allclose(np.linalg.norm(off, axis=1), out["thickness"], atol=1e-6)
     assert (off[:, 1] > 0).all() and out["thickness"].min() >= 1.0 and out["thickness"].max() < 40

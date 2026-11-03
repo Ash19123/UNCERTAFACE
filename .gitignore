@@ -19,3 +19,8 @@ external_data/
 /demo/uncertaface_demo.html
 real_*.log
 real_*.err
+/demo/screens/
+/demo/social/
+UNCERTAFACE_DATA_REAL_v1/
+/reports_v1/
+/demo/_proto/

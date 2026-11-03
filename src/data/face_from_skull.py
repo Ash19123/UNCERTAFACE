@@ -25,8 +25,9 @@ from scipy.ndimage import distance_transform_edt, gaussian_filter, grey_closing,
 
 from . import mesh_utils as mu
 
-FACE_X = np.arange(-55.0, 55.1, 5.0)
-FACE_Z = np.arange(30.0, -130.1, -5.0)
+FACE_STEP = 3.0                                   # grid spacing (mm); v1 used 5 mm (603 vertices)
+FACE_X = np.arange(-57.0, 57.1, FACE_STEP)
+FACE_Z = np.arange(30.0, -129.1, -FACE_STEP)
 RES = 1.5
 
 
@@ -50,7 +51,7 @@ def _disk(radius_mm: float, res: float):
     return (xx ** 2 + yy ** 2) <= r * r
 
 
-def front_envelope(verts: np.ndarray, close_mm: float = 22.0, dilate_mm: float = 13.0, smooth_mm: float = 4.0,
+def front_envelope(verts: np.ndarray, close_mm: float = 22.0, dilate_mm: float = 18.0, smooth_mm: float = 9.0,
                    res: float = RES):
     """Closed, dilated and smoothed front-most surface; returns ``(H, xr, zr)`` (H indexed [z, x], mm).
 
@@ -146,13 +147,59 @@ def random_field_2d(seed: int, x, z, k: int = 6):
     return f / max(np.abs(f).max(), 1e-9)
 
 
+# ------------------------------------------------------------------ facial relief (v2)
+def _g(x, z, cx, cz, sx, sz):
+    return np.exp(-0.5 * (((x - cx) / sx) ** 2 + ((z - cz) / sz) ** 2))
+
+
+def _sig(v):
+    return 1.0 / (1.0 + np.exp(-v))
+
+
+def feature_relief(x, z, p: dict):
+    """Extra soft-tissue relief (mm along the surface normal) that makes the synthetic face read as a FACE:
+    brow, eyes with lid creases, nose with alae and nostrils, cheekbones, nasolabial folds, lips with a mouth line,
+    mentolabial sulcus and chin. Positions are in the reference frame (orbits ~(+-31, -40), mouth ~ z=-80) and
+    are ASSUMED generic proportions, not measurements. The latents scale nose / lips / cheeks."""
+    r = np.zeros_like(x, dtype=float)
+    ax = np.abs(x)
+    # brow ridge: arched band above the orbits
+    r += 1.6 * _g(ax, z, 30.0, -22.0 - 0.08 * (ax - 30.0) ** 2 / 10.0, 17.0, 3.4)
+    # eyes: globe bulge, palpebral fissure, upper-lid crease, inner canthus
+    r += 5.5 * _g(ax, z, 31.0, -40.0, 10.0, 7.0)
+    r -= 3.0 * _g(ax, z, 31.0, -40.0, 8.5, 1.6)
+    r -= 0.8 * _g(ax, z, 31.0, -33.5, 9.0, 1.6)
+    r -= 2.2 * _g(ax, z, 15.0, -40.0, 3.0, 4.0)
+    # nose: bridge widening to alae, tip ball, nostrils
+    u = np.clip((-18.0 - z) / 38.0, 0.0, 1.0)
+    tip = 15.0 + p["nose_projection"]
+    sx = 4.2 + 8.0 * u
+    fall = 1.0 / (1.0 + np.exp((-z - 58.0) / 1.5))
+    r += (1.5 * _sig((-z - 14.0) / 3.0) + (tip - 1.5) * u ** 1.8) * fall * np.exp(-0.5 * (x / sx) ** 2)
+    r += 3.0 * _g(x, z, 0.0, -55.5, 6.0, 5.0)
+    r += 3.4 * _g(ax, z, 11.0, -59.0, 4.6, 4.2)
+    r -= 4.5 * _g(ax, z, 6.8, -62.5, 3.0, 2.0)
+    r -= 2.2 * _g(ax, z, 15.5, -57.0, 2.0, 4.0)
+    # cheekbones, nasolabial folds
+    r += 3.5 * _g(ax, z, 46.0, -52.0, 12.0, 11.0)
+    t = np.clip((-60.0 - z) / 24.0, 0.0, 1.0)
+    r -= 1.8 * np.exp(-0.5 * ((ax - (13.0 + 12.0 * t)) / 2.4) ** 2) * (z < -58.0) * (z > -86.0)
+    # lips, mouth line, mentolabial sulcus, chin
+    lip = 1.0 + p["lip_fullness"] / 4.0
+    r += 5.0 * lip * _g(x, z, 0.0, -74.0, 15.0, 4.2)
+    r += 5.6 * lip * _g(x, z, 0.0, -90.0, 13.0, 4.4)
+    r -= 3.8 * _g(x, z, 0.0, -81.5, 19.0 - 0.0 * ax, 1.5)
+    r -= 3.0 * _g(x, z, 0.0, -100.0, 15.0, 2.6)
+    r += 6.5 * _g(x, z, 0.0, -118.0, 15.0, 9.0)
+    return r
+
+
 def thickness(x, z, p: dict, t_min: float = 1.0):
     """Soft-tissue thickness (reference-frame mm) from face latents ``p`` (same names as the procedural generator)."""
     g = random_field_2d(p["thickness_field_seed"], x, z)
     u = random_field_2d(p["unobserved_field_seed"], x, z)
     t = p["thickness_scale"] * base_thickness(x, z) * (1 + p["thickness_field_amp"] * g)
-    t += p["nose_projection"] * _bump(x, z, 0.0, -52.0, 8.0)
-    t += p["lip_fullness"] * _bump(x, z, 0.0, -84.0, 9.0)
+    t += feature_relief(x, z, p)
     t += p["cheek_fat"] * np.maximum(_bump(x, z, 42.0, -64.0, 14.0), _bump(x, z, -42.0, -64.0, 14.0))
     t += p["unobserved_field_amp"] * u
     return np.maximum(t, t_min)

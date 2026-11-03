@@ -31,12 +31,39 @@ def r1(a):
     return np.round(np.asarray(a, dtype=float), 1).tolist()
 
 
+def make_upsampler(q: np.ndarray, scale: float, step: float = 1.5):
+    """Display-only: C1 cubic interpolation of any per-vertex field of the 3 mm face grid onto a fine regular grid
+    (``step`` mm) clipped to a smooth oval, so the outline is not stair-stepped. Returns (up, faces)."""
+    from scipy.interpolate import CloughTocher2DInterpolator
+    from src.data import face_from_skull as ffs
+    xs = np.arange(q[:, 0].min(), q[:, 0].max() + 1e-6, step)
+    zs = np.arange(q[:, 1].max(), q[:, 1].min() - 1e-6, -step)
+    X, Z = np.meshgrid(xs, zs, indexing="xy")
+    mask = ffs.oval_mask(X * scale / 1.0, Z * scale / 1.0) & np.isfinite(CloughTocher2DInterpolator(q, np.zeros(len(q)))(X, Z))
+    q2 = np.stack([X[mask], Z[mask]], 1)
+    faces = ffs.grid_triangles(mask)
+    # snap outline vertices onto the analytic oval so the edge is smooth instead of stair-stepped
+    pad = np.pad(mask, 1)
+    edge = (mask & ~(pad[:-2, 1:-1] & pad[2:, 1:-1] & pad[1:-1, :-2] & pad[1:-1, 2:]))[mask]
+    cx, cz, ax, az = 0.0, -50.0, 58.0 * 0.985, 82.0 * 0.985
+    rx, rz = q2[edge, 0] * scale, q2[edge, 1] * scale - cz
+    r = np.sqrt((rx / ax) ** 2 + (rz / az) ** 2)
+    moved = q2.copy()
+    moved[edge, 0], moved[edge, 1] = rx / r / scale, (rz / r + cz) / scale
+    ok = np.isfinite(CloughTocher2DInterpolator(q, np.zeros(len(q)))(moved[:, 0], moved[:, 1]))
+    q2 = np.where(ok[:, None], moved, q2)
+
+    def up(vals):
+        return CloughTocher2DInterpolator(q, np.asarray(vals, float))(q2)
+    return up, faces
+
+
 def load_json(p):
     p = Path(p)
     return json.loads(p.read_text()) if p.exists() else None
 
 
-def build(run_dir, root, out_json, device="cpu", cell_mm=3.6, n_hidden=1800) -> dict:
+def build(run_dir, root, out_json, device="cpu", cell_mm=2.4, n_hidden=1800) -> dict:
     model, norm, cfg, root = load_run(run_dir, device)
     d = ds.UncertafaceDataset(root, "test", norm, cfg["data"]["n_points"], cfg["data"]["knn_k"])
     by_base: dict[int, dict] = {}
@@ -80,6 +107,13 @@ def build(run_dir, root, out_json, device="cpu", cell_mm=3.6, n_hidden=1800) -> 
                       err=r1(err), rmse=rms(err), baseline_rmse=rms(np.linalg.norm(tpl - gt, axis=1)),
                       mean_unc=None if unc is None else float(unc.mean()))
 
+    up, f2 = make_upsampler(base[:, [0, 2]], float(meta["extra"]["scale"]))
+    for o in obs.values():
+        o["pred"] = r1(up(o["pred"]))
+        o["err"] = r1(up(o["err"]))
+        if o["unc"] is not None:
+            o["unc"] = r1(up(o["unc"]))
+    gt_up, base_up, tpl_up = up(gt), up(base), up(tpl)
     rd = Path("reports")
     res = load_json(rd / "results" / Path(run_dir).name / "results.json")
     bl = load_json(rd / "baselines.json")
@@ -102,8 +136,8 @@ def build(run_dir, root, out_json, device="cpu", cell_mm=3.6, n_hidden=1800) -> 
         sparsification_norm_se=res["sparsification"]["normalised_se"] if res and "sparsification" in res else None)
     data = dict(
         case=meta.get("extra", {}).get("case"), base_id=base_id, skull_v=r1(dv), skull_f=df.astype(int).ravel().tolist(),
-        hidden_idx_hint=n_hidden, face_faces=corr["face_faces"].astype(int).ravel().tolist(), base=r1(base), gt=r1(gt),
-        template=r1(tpl), observations=obs, severities=SEVERITIES, metrics=metrics,
+        hidden_idx_hint=n_hidden, face_faces=f2.astype(int).ravel().tolist(), base=r1(base_up), gt=r1(gt_up),
+        template=r1(tpl_up), n_model_vertices=int(len(gt)), observations=obs, severities=SEVERITIES, metrics=metrics,
         counts=rep["counts"] if rep else None, run=dict(epochs=exp["epochs_run"], best_epoch=exp["best_epoch"],
                                                           params=exp["model_params"], seconds=exp["duration_s"]) if exp else None,
         source=rep.get("source_summary", {}).get("skull_source") if rep else None)
