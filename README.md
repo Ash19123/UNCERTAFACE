@@ -21,8 +21,13 @@ reconstruction and uncertainty quality.
   (5 occlusion patterns, 4 severity bins with *measured* missing fraction), leakage-free splits, masked PointNet/PointNet++ encoders, template
   decoder with bounded Gaussian head, losses, trainer (resume, early stopping, health monitors), conformal calibration (global / per-axis /
   per-region / simultaneous), deep-ensemble decomposition, reconstruction + uncertainty metrics, sparsification, stress tests, ablation driver, report generator.
-- **Real-skull experiments: in progress.** Only a few dozen real skulls are being used, so held-out sets are tiny (a handful of skulls) and every
-  metric will have wide uncertainty.
+- **Real-skull experiments (60 MUG500+ skulls, synthetic faces):** split 42 train / 6 validation / 6 calibration / 6 test skulls, so every number has
+  wide uncertainty. Held-out test vertex RMSE, `face_v3_pn` (PointNet encoder, 150 epochs): **5.86 mm**; `face_v3` (PointNet++): 6.08 mm; mean-face
+  baseline 8.11 mm; oracle floor 1.34 mm. Seed-to-seed spread of the same model is about 1.4 mm (`reports/ablation_table.md`), so the 0.2 mm gap
+  between the two is not established; the PointNet choice followed validation error and a 60-epoch ablation. Raw 90% intervals cover 95-96%, conformal
+  calibration gives 91%. A 3-seed ensemble adds little (epistemic share of variance about 5%). These are errors against *synthetic* faces built
+  from assumed anatomy; they say nothing about accuracy on real faces. Not a forensic or identification tool.
+  `scripts/face_from_any_skull.py` makes a face and per-point uncertainty for any skull mesh; `scripts/make_demo_site.py` builds the demo.
 - **Earlier results** (`reports/archive_v1_ellipsoid/`) come from a first version whose "skull" was a smooth egg-shaped procedural shell. They are kept
   for the record and are **not comparable** with the real-skull setup. On that toy world the model improved on a no-skull baseline
   (3.19 vs 4.17 mm vertex RMSE; irreducible floor 1.62 mm) with informative but imperfect uncertainty, and intervals needed conformal calibration.

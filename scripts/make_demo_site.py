@@ -1,6 +1,6 @@
 """Build the multi-skull demo site: one JSON per skull plus an index, from a trained run.
 
-  python scripts/make_demo_site.py --run experiments/runs/face_v3 --root UNCERTAFACE_DATA_REAL --out demo/site
+  python scripts/make_demo_site.py --run experiments/runs/face_v3_pn --root UNCERTAFACE_DATA_REAL --out demo/site
 
 Writes ``<out>/data/index.json`` (list of skulls with their split, headline numbers read from reports/) and
 ``<out>/data/skull_<case>.json`` (decimated real skull, true and predicted synthetic face, per-vertex predicted
@@ -108,7 +108,7 @@ def build_skull(model, norm, cfg, root, recs: dict, base_id: int, split: str, de
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--run", default="experiments/runs/face_v3")
+    ap.add_argument("--run", default="experiments/runs/face_v3_pn")
     ap.add_argument("--root", default="UNCERTAFACE_DATA_REAL")
     ap.add_argument("--out", default="demo/site")
     ap.add_argument("--page", default="demo/template.html")

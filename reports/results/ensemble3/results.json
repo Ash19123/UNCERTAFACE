@@ -1,0 +1,162 @@
+{
+  "name": "ensemble3",
+  "members": [
+    "abl_full",
+    "abl_full_seed1",
+    "abl_full_seed2"
+  ],
+  "n_members": 3,
+  "eval_split": "test",
+  "synthetic": true,
+  "units": "mm",
+  "single_member_rmse_mm": {
+    "abl_full": 6.961998462677002,
+    "abl_full_seed1": 8.055062294006348,
+    "abl_full_seed2": 6.668401718139648
+  },
+  "ensemble_reconstruction": {
+    "vertex_mae": {
+      "mean": 2.7223775734504065,
+      "std": 0.6433806420866738
+    },
+    "vertex_rmse": {
+      "mean": 6.8048935532569885,
+      "std": 1.3285156379264424
+    },
+    "chamfer": {
+      "mean": 4.176145460962376,
+      "std": 0.9896875413158299
+    },
+    "hausdorff": {
+      "mean": 19.627493841275736,
+      "std": 5.252388777296412
+    },
+    "point_to_surface": {
+      "mean": 3.642268822590797,
+      "std": 1.0942425465226029
+    },
+    "surface_error": {
+      "mean": 3.7073162964322357,
+      "std": 1.0734431990236193
+    }
+  },
+  "uncertainty": {
+    "aleatoric": {
+      "mean_std_mm": 4.986798286437988,
+      "cov90_raw": 0.9772440997083002,
+      "crps_mm": 2.040574043599271,
+      "pooled_spearman_err_vs_std": 0.48012821297771546,
+      "normalised_sparsification_error": 0.49518910383030723,
+      "aurc_mm": 4.577958452602754
+    },
+    "epistemic": {
+      "mean_std_mm": 0.7661065459251404,
+      "cov90_raw": 0.22854680456112436,
+      "crps_mm": 2.3859441014315763,
+      "pooled_spearman_err_vs_std": 0.2656160303377303,
+      "normalised_sparsification_error": 0.6561599460848224,
+      "aurc_mm": 5.003604822458136
+    },
+    "combined": {
+      "mean_std_mm": 5.09321928024292,
+      "cov90_raw": 0.9804527976664015,
+      "crps_mm": 2.047486278422953,
+      "pooled_spearman_err_vs_std": 0.4771246233077788,
+      "normalised_sparsification_error": 0.5051900496366074,
+      "aurc_mm": 4.604403405104409
+    }
+  },
+  "epistemic_share_of_total_variance": 0.04819619655609131,
+  "combined_calibrated_global": {
+    "50": {
+      "nominal": 0.5,
+      "pointwise": 0.48502718111906656,
+      "per_axis": [
+        0.6292163882259347,
+        0.32446300715990456,
+        0.5014021479713604
+      ],
+      "simultaneous": 0.0,
+      "mean_half_width_mm": 1.8916548599701883
+    },
+    "80": {
+      "nominal": 0.8,
+      "pointwise": 0.7913484486873509,
+      "per_axis": [
+        0.8988762927605409,
+        0.667153937947494,
+        0.8080151153540175
+      ],
+      "simultaneous": 0.0,
+      "mean_half_width_mm": 4.109810104532455
+    },
+    "90": {
+      "nominal": 0.9,
+      "pointwise": 0.9025159108989658,
+      "per_axis": [
+        0.9847056483691329,
+        0.823170246618934,
+        0.8996718377088305
+      ],
+      "simultaneous": 0.020833333333333332,
+      "mean_half_width_mm": 5.573108033583589
+    },
+    "95": {
+      "nominal": 0.95,
+      "pointwise": 0.9541534075841952,
+      "per_axis": [
+        0.9984884645982498,
+        0.908890214797136,
+        0.9550815433571996
+      ],
+      "simultaneous": 0.08333333333333333,
+      "mean_half_width_mm": 6.998370787725555
+    }
+  },
+  "combined_raw": {
+    "50": {
+      "nominal": 0.5,
+      "pointwise": 0.7206543357199682,
+      "per_axis": [
+        0.8450278440731901,
+        0.571678599840891,
+        0.7452565632458233
+      ],
+      "simultaneous": 0.0,
+      "mean_half_width_mm": 3.4353241712044347
+    },
+    "80": {
+      "nominal": 0.8,
+      "pointwise": 0.9405363298859719,
+      "per_axis": [
+        0.9964598249801114,
+        0.8857498011137629,
+        0.9393993635640414
+      ],
+      "simultaneous": 0.020833333333333332,
+      "mean_half_width_mm": 6.527223087497447
+    },
+    "90": {
+      "nominal": 0.9,
+      "pointwise": 0.9804527976664015,
+      "per_axis": [
+        1.0,
+        0.9582836117740652,
+        0.9830747812251392
+      ],
+      "simultaneous": 0.20833333333333334,
+      "mean_half_width_mm": 8.377600135683279
+    },
+    "95": {
+      "nominal": 0.95,
+      "pointwise": 0.9926743569345001,
+      "per_axis": [
+        1.0,
+        0.9827366746221161,
+        0.9952863961813843
+      ],
+      "simultaneous": 0.4791666666666667,
+      "mean_half_width_mm": 9.982526270893235
+    }
+  }
+}

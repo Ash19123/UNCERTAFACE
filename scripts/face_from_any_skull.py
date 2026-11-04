@@ -1,6 +1,6 @@
 """Reconstruct a face, with per-vertex uncertainty, from ANY skull mesh (.stl / .ply / .obj).
 
-  python scripts/face_from_any_skull.py --skull my_skull.stl --run experiments/runs/face_v3 --out out/my_skull
+  python scripts/face_from_any_skull.py --skull my_skull.stl --run experiments/runs/face_v3_pn --out out/my_skull
 
 Steps: clean + align the mesh to the reference skull frame (``real_skulls.prepare_case``; fails loudly if the
 alignment residual or scale is implausible), sample a point cloud from its surface, run the trained model, apply the
@@ -65,7 +65,7 @@ def reconstruct(skull, run_dir, reference="external_data/mug500/processed/refere
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--skull", required=True)
-    ap.add_argument("--run", default="experiments/runs/face_v3")
+    ap.add_argument("--run", default="experiments/runs/face_v3_pn")
     ap.add_argument("--out", required=True)
     ap.add_argument("--reference", default="external_data/mug500/processed/reference.npz")
     ap.add_argument("--missing-fraction", type=float, default=0.10,
