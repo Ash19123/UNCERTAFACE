@@ -149,6 +149,21 @@ Pointwise = fraction of coordinates inside their interval (marginal). Simultaneo
 | extreme-lateral | 6 | 7.05 | 7.51 | 0.94 |
 | extreme-region | 6 | 6.66 | 7.51 | 0.94 |
 
+### Which face regions are most certain (test split)
+| region | mean_halfwidth_mm | mean_error_mm |
+|---|---|---|
+| forehead | 4.03 | 3.34 |
+| eyes | 5.00 | 4.21 |
+| nose | 5.45 | 4.74 |
+| cheeks | 5.84 | 4.86 |
+| mouth | 6.74 | 6.60 |
+| chin and jaw | 6.76 | 7.25 |
+
+- rank correlation of region certainty vs real error: 1.00 over 6 regions; per-vertex Spearman 0.53
+- error in the 25% most / least certain points: 2.82 / 7.60 mm (all points 4.95 mm)
+- shown per-coordinate half-widths contain 90.7% of true coordinates (nominal 90%)
+- plausible faces (K=4, smoothing 12.0 mm, an assumption): mean sample RMSE 8.37 mm vs mean prediction 5.86 mm; best-of-K (oracle-selected) 7.47 mm
+
 Figures: `reports/results/face_v3_pn/*.png`
 
 ## Ablations

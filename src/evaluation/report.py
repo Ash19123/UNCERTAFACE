@@ -93,6 +93,14 @@ def build_report(main: str, ensemble: str | None = None, reports="reports", data
         L += [f"### Test-set breakdown by {name}", _md(rows, [c for c in ("group", "n", "rmse_mm", "mean_pos_std_mm", "cov90_raw") if c in rows[0]]), ""]
     for name, rows in r.get("stress_controlled", {}).items():
         L += [f"### Controlled sweep: {name}", _md(rows, [c for c in ("group", "n", "rmse_mm", "mean_pos_std_mm", "cov90_raw") if c in rows[0]]), ""]
+    z = _load(R / "results" / main / "zone_certainty.json")
+    if z:
+        L += ["### Which face regions are most certain (test split)",
+              _md([dict(region=r["zone"], mean_halfwidth_mm=r["mean_halfwidth_mm"], mean_error_mm=r["mean_error_mm"]) for r in z["zones"]], ["region", "mean_halfwidth_mm", "mean_error_mm"], "{:.2f}"), "",
+              f"- rank correlation of region certainty vs real error: {z['zone_rank_spearman_halfwidth_vs_error']:.2f} over {len(z['zones'])} regions; per-vertex Spearman {z['vertex_spearman_halfwidth_vs_error']:.2f}",
+              f"- error in the 25% most / least certain points: {z['error_in_25pct_most_certain_mm']:.2f} / {z['error_in_25pct_least_certain_mm']:.2f} mm (all points {z['error_all_mm']:.2f} mm)",
+              f"- shown per-coordinate half-widths contain {z['coverage_per_coordinate_inside_halfwidth']*100:.1f}% of true coordinates (nominal 90%)",
+              f"- plausible faces (K={z['k']}, smoothing {z['corr_mm']} mm, an assumption): mean sample RMSE {z['samples']['mean_sample_rmse_mm']:.2f} mm vs mean prediction {z['samples']['mean_prediction_rmse_mm']:.2f} mm; best-of-K (oracle-selected) {z['samples']['best_of_k_rmse_mm']:.2f} mm", ""]
     L += [f"Figures: `reports/results/{main}/*.png`", ""]
     ab = Path(R / "ablation_table.md")
     L += ["## Ablations", ab.read_text() if ab.exists() else "not run", ""]

@@ -28,6 +28,8 @@ from src.data import dataset as ds
 from src.data import mesh_utils as mu
 from src.data import real_skulls as rs
 from src.evaluation.predict import predict_cloud
+from src.uncertainty import plausible_faces as pf
+from src.uncertainty.calibration import ConformalCalibrator
 from src.visualization.results import load_run
 
 SEVERITIES = ["mild", "moderate", "severe", "extreme"]
@@ -65,10 +67,12 @@ def make_upsampler(q: np.ndarray, scale: float, step: float = 2.25):
 
     def up(vals):
         return CloughTocher2DInterpolator(q, np.asarray(vals, float))(q2)
+    up.q2 = q2
     return up, faces
 
 
-def build_skull(model, norm, cfg, root, recs: dict, base_id: int, split: str, device, cell_mm: float, step: float):
+def build_skull(model, norm, cfg, root, recs: dict, base_id: int, split: str, device, cell_mm: float, step: float,
+                W=None, q90: float = 1.0, k_samples: int = 4):
     rms = lambda e: float(np.sqrt((e ** 2).mean()))
     sk_v, sk_f = mu.load_mesh(str(root / f"raw/generated/cranial_meshes/B{base_id:04d}.ply"))
     dv, df = rs.cluster_decimate(sk_v[sk_f], cell_mm)
@@ -93,13 +97,15 @@ def build_skull(model, norm, cfg, root, recs: dict, base_id: int, split: str, de
         pred = o["mean_mm"][0].cpu().numpy()
         unc = o["pos_std_mm"][0].cpu().numpy()
         err = np.linalg.norm(pred - gt, axis=1)
+        smp = pf.sample_faces(pred, o["std_mm"][0].cpu().numpy(), W, q90, k_samples, seed=base_id * 10 + len(obs)) if W is not None else None
         pts = pcz["points"]
         pts = pts[rng.choice(len(pts), min(900, len(pts)), replace=False)]
         obs[s] = dict(missing_fraction=miss, pattern=r["observation"]["pattern"], n_points=r["observation"]["n_points"],
-                      points=r1(pts), vis=pcz["vertex_visible"][nn].astype(int).tolist(), pred=r1(up(pred)),
+                      points=r1(pts), vis=pcz["vertex_visible"][nn].astype(int).tolist(), pred=r1(up(pred)), samples=None if smp is None else [r1(up(x)) for x in smp],
                       unc=r1(up(unc)), err=r1(up(err)), rmse=rms(err), baseline_rmse=rms(np.linalg.norm(tpl - gt, axis=1)),
                       mean_unc=float(unc.mean()), mean_err=float(err.mean()))
-    return dict(id=meta["extra"]["case"], case=meta["extra"]["case"], split=split, base_id=base_id, skull_v=r1(dv),
+    zone = pf.zone_ids(up.q2[:, 0] * float(meta["extra"]["scale"]), up.q2[:, 1] * float(meta["extra"]["scale"]))
+    return dict(id=meta["extra"]["case"], zone=zone.tolist(), case=meta["extra"]["case"], split=split, base_id=base_id, skull_v=r1(dv),
                 skull_f=df.astype(int).ravel().tolist(), face_faces=f2.astype(int).ravel().tolist(), base=r1(up(base)),
                 gt=r1(up(gt)), observations=obs, n_model_vertices=int(len(gt)))
 
@@ -118,6 +124,9 @@ def main() -> None:
     model, norm, cfg, root = load_run(a.run, a.device)
     out = Path(a.out)
     (out / "data").mkdir(parents=True, exist_ok=True)
+    tpl = norm.inverse(model.decoder.template.cpu().numpy())
+    W = pf.smoothing_matrix(tpl[:, [0, 2]], 12.0)
+    q90 = float(ConformalCalibrator.load(Path("reports/results") / Path(a.run).name / "calibrator_global.json").scale(0.9, (1, len(tpl), 3)))
     listing = []
     for split in SPLITS:
         d = ds.UncertafaceDataset(root, split, norm, cfg["data"]["n_points"], cfg["data"]["knn_k"], cache=False)
@@ -127,7 +136,7 @@ def main() -> None:
         ids = [b for b, m in sorted(by.items()) if all(s in m for s in SEVERITIES)]
         ids = ids if split == "test" else ids[: a.per_split]
         for b in ids:
-            sk = build_skull(model, norm, cfg, root, by[b], b, split, a.device, a.cell_mm, a.step)
+            sk = build_skull(model, norm, cfg, root, by[b], b, split, a.device, a.cell_mm, a.step, W, q90)
             (out / "data" / f"skull_{sk['id']}.json").write_text(json.dumps(sk, separators=(",", ":")))
             listing.append(dict(id=sk["id"], split=split, file=f"data/skull_{sk['id']}.json",
                                 rmse={s: sk["observations"][s]["rmse"] for s in SEVERITIES}))
@@ -148,7 +157,9 @@ def main() -> None:
         spearman_missing_vs_pred_std=res["missingness_relationship"].get("spearman_missing_vs_pred_std"),
         pooled_spearman_err_vs_std=res["missingness_relationship"].get("pooled_spearman_err_vs_std"),
         sparsification_norm_se=res["sparsification"]["normalised_se"] if "sparsification" in res else None)
-    index = dict(skulls=listing, severities=SEVERITIES, metrics=metrics, counts=rep["counts"] if rep else None,
+    metrics["q90"] = q90
+    metrics["zone_check"] = load_json(rd / "results" / Path(a.run).name / "zone_certainty.json")
+    index = dict(skulls=listing, severities=SEVERITIES, zones=pf.ZONES, metrics=metrics, counts=rep["counts"] if rep else None,
                  run=dict(epochs=exp["epochs_run"], best_epoch=exp["best_epoch"], params=exp["model_params"],
                           seconds=exp["duration_s"]) if exp else None,
                  source=rep.get("source_summary", {}).get("skull_source") if rep else None)

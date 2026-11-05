@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
 <title>UNCERTAFACE Demo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -81,15 +86,28 @@ figcaption { position: absolute; z-index: 2; top: 10px; left: 12px; color: #fff;
 .ctl { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; }
 .seg.four { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .loading { color: #fff; font: 500 0.85rem var(--font-data); position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.6); z-index: 3; }
+
+.trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.quad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.plot.small { height: clamp(240px, 34vh, 340px); }
+.zones { display: flex; flex-direction: column; gap: 6px; }
+.zrow { display: grid; grid-template-columns: 9rem minmax(60px, 1fr) 6rem 14rem; gap: 12px; align-items: center; font-size: 0.92rem; }
+.zname { font-weight: 500; } .zval, .zsp { font: 500 0.88rem var(--font-data); font-variant-numeric: tabular-nums; }
+.zsp { color: var(--muted); white-space: nowrap; }
+.zbar { background: var(--rule); height: 14px; } .zbar i { display: block; height: 100%; background: #000; }
+@media (max-width: 1000px) { .trio { grid-template-columns: minmax(0, 1fr); } .quad { grid-template-columns: repeat(2, minmax(0, 1fr)); } .trio .plot { height: 380px; } }
+@media (max-width: 640px) { .zrow { grid-template-columns: 1fr auto; } .zbar, .zsp { grid-column: 1 / -1; } }
 @media (max-width: 880px) { .results, .duo { grid-template-columns: minmax(0, 1fr); } .plot { height: 400px; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
+</head>
+<body>
 
 <div class="wrap">
   <header class="head">
-    <span class="eyebrow">Research prototype / early</span>
+    <span class="eyebrow">Research prototype</span>
     <h1>UNCERTAFACE</h1>
-    <p class="lead">Predict a face from part of a skull, and say how sure the model is, in millimetres.</p>
+    <p class="lead">A skull is found with parts missing. Build the face on it, show several plausible faces, and mark which regions are certain.</p>
     <div class="notice"><strong>Read this first.</strong> The skulls are real, anonymised CT scans. The faces are <strong>synthetic</strong>: an assumed layer of soft tissue, not measured faces. This is not a forensic tool and it does not identify anyone.</div>
     <div class="links">
       <a href="https://github.com/Ash19123/UNCERTAFACE" target="_blank" rel="noopener">Code and methodology on GitHub</a>
@@ -99,39 +117,54 @@ figcaption { position: absolute; z-index: 2; top: 10px; left: 12px; color: #fff;
   </header>
 
   <section class="section" aria-labelledby="try">
-    <h2 id="try">Pick a skull. Get a face. See how sure the model is.</h2>
+    <h2 id="try">A skull is found with parts missing. What face goes on it?</h2>
     <p id="intro"></p>
     <div class="picker">
-      <div class="group"><label for="skull">Skull</label><select id="skull"></select></div>
+      <div class="group"><label for="skull">Skull found</label><select id="skull"></select></div>
       <span class="tag" id="splitTag"></span>
     </div>
     <p class="note" id="splitNote"></p>
-    <div class="duo">
-      <figure class="stage"><figcaption>Predicted face</figcaption><div id="plotA" class="plot" role="img" aria-label="3D view of a real skull with a synthetic face predicted over it"></div></figure>
-      <figure class="stage"><figcaption id="capB">Where the model is unsure</figcaption><div id="plotB" class="plot" role="img" aria-label="The same face coloured by how unsure the model is, in millimetres"></div></figure>
-    </div>
     <div class="panel wide">
-      <div class="group"><span class="lab" id="sevlab">How much of the skull is hidden</span>
+      <div class="group"><span class="lab" id="sevlab">How much of the skull is missing</span>
         <div class="seg four" id="sev" role="group" aria-labelledby="sevlab"></div></div>
       <div class="ctl">
-        <div class="group"><label for="grow">Soft tissue grown over the bone</label>
-          <input id="grow" type="range" min="0" max="100" value="100">
-          <div class="row"><button class="btn" id="play" type="button">Grow from bone</button></div></div>
-        <div class="group"><span class="lab" id="modelab">Right panel colour shows</span>
+        <div class="group"><label for="thr">Mark regions certain to within <span id="thrv"></span> mm</label>
+          <input id="thr" type="range" min="2" max="14" step="0.5" value="5">
+          <span class="note" id="thrnote"></span></div>
+        <div class="group"><span class="lab" id="modelab">Third view colour shows</span>
           <div class="row" role="group" aria-labelledby="modelab">
-            <button class="btn on" id="m-unc" type="button" aria-pressed="true">Predicted uncertainty</button>
+            <button class="btn on" id="m-cert" type="button" aria-pressed="true">Predicted certainty</button>
             <button class="btn" id="m-err" type="button" aria-pressed="false">Actual error</button></div></div>
-        <div class="group"><label for="op">Face opacity (lower shows the skull)</label>
-          <input id="op" type="range" min="0" max="100" value="100">
-          <label class="check"><input type="checkbox" id="c-pts" checked> Points the model received</label></div>
-        <div class="group"><span class="lab" id="camlab">Camera</span>
+        <div class="group"><span class="lab" id="camlab">Camera (all views move together)</span>
           <div class="row" role="group" aria-labelledby="camlab">
-            <button class="btn" data-cam="front" type="button">Front</button>
+            <button class="btn on" data-cam="front" type="button">Front</button>
             <button class="btn" data-cam="side" type="button">Side</button>
-            <button class="btn on" data-cam="oblique" type="button">Oblique</button></div></div>
+            <button class="btn" data-cam="oblique" type="button">Oblique</button></div>
+          <label class="check"><input type="checkbox" id="c-pts" checked> Show points given to the model</label></div>
       </div>
+    </div>
+    <div class="trio">
+      <figure class="stage"><figcaption>1 &middot; The broken skull</figcaption><div id="plotSkull" class="plot" role="img" aria-label="3D view of the skull with the missing bone shown in grey"></div></figure>
+      <figure class="stage"><figcaption>2 &middot; Most likely face</figcaption><div id="plotFace" class="plot" role="img" aria-label="The model's most likely synthetic face over the skull"></div></figure>
+      <figure class="stage"><figcaption id="capC">3 &middot; Where the face is certain</figcaption><div id="plotCert" class="plot" role="img" aria-label="The face coloured by how certain the model is, in millimetres"></div></figure>
+    </div>
+    <div class="section">
+      <h3>4 &middot; Four plausible faces from the same skull</h3>
+      <p class="note" id="smpnote"></p>
+      <div class="quad">
+        <figure class="stage"><figcaption>Face A</figcaption><div id="plotS0" class="plot small" role="img" aria-label="Plausible face A"></div></figure>
+        <figure class="stage"><figcaption>Face B</figcaption><div id="plotS1" class="plot small" role="img" aria-label="Plausible face B"></div></figure>
+        <figure class="stage"><figcaption>Face C</figcaption><div id="plotS2" class="plot small" role="img" aria-label="Plausible face C"></div></figure>
+        <figure class="stage"><figcaption>Face D</figcaption><div id="plotS3" class="plot small" role="img" aria-label="Plausible face D"></div></figure>
+      </div>
+    </div>
+    <div class="panel wide">
+      <h3>Face regions, most certain first</h3>
+      <p id="zsum"></p>
+      <div id="zones" class="zones"></div>
+      <p class="note" id="zcheck"></p>
       <dl class="readout" id="readout"></dl>
-      <p class="note">Pale bone was given to the model; grey bone was hidden from it. The face is the model's real prediction (<span id="nv"></span> points, interpolated onto a finer mesh for display); growing it from the bone is a straight-line interpolation drawn for display. The orange scale is the model's own predicted uncertainty. Drag either view to rotate; they move together.</p>
+      <p class="note">Pale bone was given to the model; grey bone was hidden from it. The face is the model's real prediction (<span id="nv"></span> points, interpolated onto a finer mesh for display). Certainty is the half-width of the calibrated 90 percent interval, per coordinate: each of the true point's left-right, front-back and up-down positions should lie within that many millimetres of the prediction about nine times in ten. Drag any view to rotate.</p>
     </div>
   </section>
 
@@ -151,8 +184,8 @@ figcaption { position: absolute; z-index: 2; top: 10px; left: 12px; color: #fff;
     <div class="cols">
       <div class="card"><h3><span>1</span>A real skull, partly hidden</h3><p>Each training example hides 10 to 85 percent of the bone with realistic patterns: patches, a cap, only the top, only one side, or whole regions. The hidden fraction is measured on the surface, not assumed.</p></div>
       <div class="card"><h3><span>2</span>Predict a face</h3><p>A point-cloud network reads the visible bone and predicts the position of about 2,000 face points. A fixed template gives every skull the same vertex layout.</p></div>
-      <div class="card"><h3><span>3</span>Say how unsure</h3><p>For every point the model also predicts a spread in millimetres. That spread is then checked and corrected on separate skulls using conformal calibration.</p></div>
-      <div class="card"><h3><span>4</span>Check against the truth</h3><p>The synthetic face is known exactly, so error and uncertainty can be compared point by point on skulls kept out of training.</p></div>
+      <div class="card"><h3><span>3</span>Say how sure, and show the alternatives</h3><p>For every point the model also predicts a spread in millimetres, checked and corrected on separate skulls (conformal calibration). From that spread the page draws four plausible faces and ranks the face regions from most to least certain.</p></div>
+      <div class="card"><h3><span>4</span>Check against the truth</h3><p>The synthetic face is known exactly, so predicted certainty can be compared with real error on skulls kept out of training: by region and point by point.</p></div>
     </div>
   </section>
 
@@ -183,101 +216,111 @@ figcaption { position: absolute; z-index: 2; top: 10px; left: 12px; color: #fff;
     validation: ["not trained on", "Not trained on, but used to choose the checkpoint, so slightly optimistic."],
     calibration: ["not trained on", "Not trained on, but used to calibrate the intervals, so its intervals are slightly optimistic."],
     train: ["seen in training", "The model saw this skull while training. Error here is optimistic and says little about new skulls."] };
-  const state = { sev: SEV.includes("severe") ? "severe" : SEV[0], mode: "unc", grow: 100, op: 100, cam: "oblique" };
+  const state = { sev: SEV.includes("severe") ? "severe" : SEV[0], mode: "cert", thr: 5, cam: "front" };
   let SK = null, vmax = 12, busy = false;
+  const Q = (M && M.q90) || 1.4;                                   // conformal factor: calibrated 90% half-width = Q * predicted std
   const col = (arr, k) => arr.map((p) => p[k]);
   const tri = (flat) => { const a = [[], [], []]; for (let n = 0; n < flat.length; n += 3) { a[0].push(flat[n]); a[1].push(flat[n + 1]); a[2].push(flat[n + 2]); } return a; };
-  const SKIN = [[0, "#ebe8e1"], [1, "#ebe8e1"]], HEAT = [[0, "#f7f7f7"], [0.35, "#ffd9c7"], [0.7, "#ff8a5c"], [1, "#e63a00"]];
+  const SKIN = [[0, "#ebe8e1"], [1, "#ebe8e1"]];
   const LIGHT = { ambient: 0.34, diffuse: 0.95, specular: 0.35, roughness: 0.55, fresnel: 0.15 }, LP = { x: -2200, y: 3200, z: 2600 };
-  const cams = { front: { eye: { x: 0.05, y: 2.0, z: 0.25 } }, side: { eye: { x: 2.0, y: 0.3, z: 0.2 } }, oblique: { eye: { x: 1.4, y: 1.55, z: 0.4 } } };
+  const cams = { front: { eye: { x: 0.05, y: 2.7, z: 0.3 } }, side: { eye: { x: 2.7, y: 0.4, z: 0.25 } }, oblique: { eye: { x: 1.9, y: 2.1, z: 0.5 } } };
   const camObj = () => Object.assign({ up: { x: 0, y: 0, z: 1 } }, cams[state.cam]);
+  const IDS = ["plotSkull", "plotFace", "plotCert", "plotS0", "plotS1", "plotS2", "plotS3"];
 
   const sel = $("skull");
   const groups = { test: "Held out (never used)", validation: "Validation", calibration: "Calibration", train: "Seen in training" };
   Object.keys(groups).forEach((g) => { const list = IDX.skulls.filter((k) => k.split === g); if (!list.length) return;
     const og = document.createElement("optgroup"); og.label = groups[g];
     list.forEach((k) => { const o = document.createElement("option"); o.value = k.id; o.textContent = k.id; og.appendChild(o); }); sel.appendChild(og); });
-  $("intro").textContent = IDX.skulls.length + " real skulls are available here, each with a synthetic face predicted over it. Choose how much bone is hidden and the model draws the face and marks where it is unsure.";
+  $("intro").textContent = "Pick one of " + IDX.skulls.length + " real skulls and how much of it is missing. The model builds the most likely synthetic face, four other plausible faces, and marks which regions of the face it is sure about.";
+  $("smpnote").textContent = "Each face is drawn from the model's calibrated spread, so the differences between them show how much the skull leaves open. They are illustrations of the uncertainty. They are not better guesses than face 2, whose error is lower, and the way neighbouring points move together is an assumption (12 mm smoothing), not something the model learned.";
 
-  function posFor(o) { const l = state.grow / 100; return o.pred.map((p, n) => [0, 1, 2].map((k) => SK.base[n][k] + l * (p[k] - SK.base[n][k]))); }
-  const valsB = (o) => state.mode === "unc" ? o.unc : o.err;
-  const hover = (o) => o.err.map((e, n) => "error " + e.toFixed(1) + " mm<br>predicted uncertainty " + o.unc[n].toFixed(1) + " mm");
+  const hwOf = (o) => o.unc.map((u) => u * Q / Math.sqrt(3));      // per-coordinate half-width (RMS over x, y, z)
+  const valsC = (o) => state.mode === "cert" ? hwOf(o) : o.err;
   function bounds() { const all = SK.skull_v.concat(SK.gt, SK.base);
     return [0, 1, 2].map((k) => [Math.min(...col(all, k)), Math.max(...col(all, k))]); }
-  function traces(which) {
-    const o = SK.observations[state.sev], p = posFor(o), [fi, fj, fk] = tri(SK.face_faces), [si, sj, sk] = tri(SK.skull_f), isB = which === "B";
-    return [
-      { type: "mesh3d", x: col(SK.skull_v, 0), y: col(SK.skull_v, 1), z: col(SK.skull_v, 2), i: si, j: sj, k: sk, intensity: o.vis.map((v) => 1 - v), cmin: 0, cmax: 1,
-        colorscale: [[0, "#f4f0e6"], [1, "#8a8a8a"]], showscale: false, flatshading: false, hoverinfo: "skip", name: "skull",
-        lighting: { ambient: 0.48, diffuse: 0.95, specular: 0.45, roughness: 0.45, fresnel: 0.25 }, lightposition: { x: 2500, y: 3000, z: 4000 } },
-      { type: "mesh3d", x: col(p, 0), y: col(p, 1), z: col(p, 2), i: fi, j: fj, k: fk, intensity: isB ? valsB(o) : o.err.map(() => 0), cmin: 0, cmax: isB ? vmax : 1,
-        colorscale: isB ? HEAT : SKIN, showscale: isB, opacity: state.op / 100, text: hover(o), hoverinfo: isB ? "text" : "skip", name: "predicted face",
-        lighting: LIGHT, lightposition: LP, colorbar: { title: { text: "mm", font: { color: "#fff" } }, len: 0.5, thickness: 12, x: 1.0, xanchor: "right", tickfont: { color: "#fff" } } },
-      { type: "scatter3d", mode: "markers", x: col(o.points, 0), y: col(o.points, 1), z: col(o.points, 2), marker: { size: 2.0, color: "#000" },
-        visible: $("c-pts").checked, hoverinfo: "skip", name: "points given to the model" }];
+  function boundsFace() { const o = SK.observations[state.sev], all = SK.base.concat(SK.gt, o.pred, ...(o.samples || []));
+    return [0, 1, 2].map((k) => [Math.min(...col(all, k)), Math.max(...col(all, k))]); }
+  function certScale() { const t = Math.min(0.97, Math.max(0.05, state.thr / vmax));
+    return [[0, "#f7f7f7"], [t * 0.995, "#ffd9c7"], [t, "#e8470f"], [1, "#e8470f"]]; }
+  const skullTrace = (o, ptsOn) => ({ type: "mesh3d", x: col(SK.skull_v, 0), y: col(SK.skull_v, 1), z: col(SK.skull_v, 2), i: tri(SK.skull_f)[0], j: tri(SK.skull_f)[1], k: tri(SK.skull_f)[2],
+    intensity: o.vis.map((v) => 1 - v), cmin: 0, cmax: 1, colorscale: [[0, "#f4f0e6"], [1, "#8a8a8a"]], showscale: false, flatshading: false, hoverinfo: "skip", name: "skull",
+    lighting: { ambient: 0.48, diffuse: 0.95, specular: 0.45, roughness: 0.45, fresnel: 0.25 }, lightposition: { x: 2500, y: 3000, z: 4000 } });
+  const ptsTrace = (o) => ({ type: "scatter3d", mode: "markers", x: col(o.points, 0), y: col(o.points, 1), z: col(o.points, 2), marker: { size: 2.0, color: "#000" },
+    visible: $("c-pts").checked, hoverinfo: "skip", name: "points given to the model" });
+  function faceTrace(pos, extra) { const [fi, fj, fk] = tri(SK.face_faces);
+    return Object.assign({ type: "mesh3d", x: col(pos, 0), y: col(pos, 1), z: col(pos, 2), i: fi, j: fj, k: fk, intensity: pos.map(() => 0), cmin: 0, cmax: 1, colorscale: SKIN, showscale: false,
+      hoverinfo: "skip", lighting: LIGHT, lightposition: LP, name: "face" }, extra || {}); }
+  function tracesFor(id) {
+    const o = SK.observations[state.sev];
+    if (id === "plotSkull") return [skullTrace(o), ptsTrace(o)];
+    if (id === "plotFace") return [skullTrace(o), faceTrace(o.pred)];
+    if (id === "plotCert") { const v = valsC(o), hw = hwOf(o);
+      return [skullTrace(o), faceTrace(o.pred, { intensity: v, cmin: 0, cmax: vmax, colorscale: state.mode === "cert" ? certScale() : [[0, "#f7f7f7"], [0.35, "#ffd9c7"], [0.7, "#ff8a5c"], [1, "#e63a00"]], showscale: true,
+        text: o.err.map((e, n) => "certain to within " + hw[n].toFixed(1) + " mm<br>actual error " + e.toFixed(1) + " mm"), hoverinfo: "text",
+        colorbar: { title: { text: state.mode === "cert" ? "± mm (90%)" : "error mm", font: { color: "#fff" } }, len: 0.5, thickness: 12, x: 1.0, xanchor: "right", tickfont: { color: "#fff" } } })]; }
+    const n = +id.slice(-1); return [faceTrace((o.samples && o.samples[n]) || o.pred, { lighting: { ambient: 0.28, diffuse: 1.0, specular: 0.4, roughness: 0.5, fresnel: 0.2 }, lightposition: { x: -1800, y: 2600, z: 2200 } })];
   }
   function layout(b) { const ax = (k) => ({ visible: false, range: b[k] });
     return { margin: { l: 0, r: 0, t: 0, b: 0 }, paper_bgcolor: "rgba(0,0,0,0)", showlegend: false,
       scene: { aspectmode: "data", camera: camObj(), xaxis: ax(0), yaxis: ax(1), zaxis: ax(2), bgcolor: "rgba(0,0,0,0)" } }; }
-  let syncing = false;
-  function link(src, dst) { $(src).on("plotly_relayout", (e) => { if (syncing || !e["scene.camera"]) return; syncing = true;
-    Plotly.relayout(dst, { "scene.camera": e["scene.camera"] }).then(() => { syncing = false; }); }); }
-  let plotted = false;
-  async function draw() {
+  let syncing = false, plotted = false;
+  function linkAll() { IDS.forEach((src) => $(src).on("plotly_relayout", (e) => { if (syncing || !e["scene.camera"]) return; syncing = true;
+    Promise.all(IDS.filter((d) => d !== src).map((d) => Plotly.relayout(d, { "scene.camera": e["scene.camera"] }))).then(() => { syncing = false; }); })); }
+  async function draw(only) {
     const b = bounds();
-    await Promise.all([Plotly.react("plotA", traces("A"), layout(b), { displayModeBar: false, responsive: true }),
-                       Plotly.react("plotB", traces("B"), layout(b), { displayModeBar: false, responsive: true })]);
-    if (!plotted) { plotted = true; link("plotA", "plotB"); link("plotB", "plotA"); }
+    const bf = boundsFace();
+    await Promise.all((only || IDS).map((id) => Plotly.react(id, tracesFor(id), layout(id.startsWith("plotS") ? bf : b), { displayModeBar: false, responsive: true })));
+    if (!plotted) { plotted = true; linkAll(); }
+  }
+  function zoneStats(o) {
+    const hw = hwOf(o), K = o.samples ? o.samples.length : 0, names = IDX.zones, acc = names.map(() => ({ n: 0, h: 0, s: 0, e: 0 }));
+    SK.zone.forEach((z, v) => { const a = acc[z]; a.n++; a.h += hw[v]; a.e += o.err[v];
+      if (K > 1) { let s = 0; for (let ax = 0; ax < 3; ax++) { let m = 0; o.samples.forEach((S) => { m += S[v][ax]; }); m /= K; let q = 0; o.samples.forEach((S) => { q += (S[v][ax] - m) ** 2; }); s += q / K; } a.s += Math.sqrt(s); } });
+    return acc.map((a, i) => ({ zone: names[i], n: a.n, hw: a.n ? a.h / a.n : NaN, spread: a.n ? a.s / a.n : NaN, err: a.n ? a.e / a.n : NaN })).filter((r) => r.n).sort((a, b) => a.hw - b.hw);
+  }
+  function renderZones() {
+    const o = SK.observations[state.sev], rows = zoneStats(o), mx = Math.max(...rows.map((r) => r.hw)) * 1.08;
+    $("zones").innerHTML = rows.map((r, i) => "<div class='zrow'><span class='zname'>" + (i + 1) + ". " + r.zone + "</span><span class='zbar'><i style='width:" + (r.hw / mx * 100).toFixed(1) + "%'></i></span><span class='zval'>± " + fmt(r.hw, 1) + " mm</span><span class='zsp'>faces differ by " + fmt(r.spread, 1) + " mm</span></div>").join("");
+    $("zsum").textContent = "Most certain: " + rows[0].zone + " (within ± " + fmt(rows[0].hw, 1) + " mm). Least certain: " + rows[rows.length - 1].zone + " (± " + fmt(rows[rows.length - 1].hw, 1) + " mm).";
+    const Z = M && M.zone_check;
+    $("zcheck").textContent = Z ? ("Checked on " + Z.n_test + " views of held-out skulls: the ranking of regions by predicted certainty matched their ranking by real error (rank correlation " + fmt(Z.zone_rank_spearman_halfwidth_vs_error, 2) + " over " + Z.zones.length + " regions). The shown half-widths contained " + fmt(Z.coverage_per_coordinate_inside_halfwidth * 100, 1) + " percent of the true face coordinates (target 90). The 25 percent of face points called most certain had an average error of " + fmt(Z.error_in_25pct_most_certain_mm, 1) + " mm; the 25 percent called least certain, " + fmt(Z.error_in_25pct_least_certain_mm, 1) + " mm. The half-width is a 90 percent bound per coordinate, so it is not the same number as the average distance error.") : "";
   }
   function readout() {
-    const o = SK.observations[state.sev];
-    const rows = [["Bone hidden from the model", fmt(o.missing_fraction * 100, 0) + " %"],
-      ["Average error of this face", fmt(o.rmse) + " mm"], ["Error with no skull (average face)", fmt(o.baseline_rmse) + " mm"],
-      ["Average predicted uncertainty", fmt(o.mean_unc) + " mm"], ["Occlusion pattern", o.pattern], ["Points received", String(o.n_points)]];
+    const o = SK.observations[state.sev], hw = hwOf(o), share = hw.filter((h) => h <= state.thr).length / hw.length;
+    $("thrv").textContent = fmt(state.thr, 1);
+    $("thrnote").textContent = fmt(share * 100, 0) + " percent of the face is marked certain at this level (pale in view 3; orange is not certain at this level).";
+    const rows = [["Bone missing", fmt(o.missing_fraction * 100, 0) + " %"],
+      ["Average error of face 2", fmt(o.rmse) + " mm"], ["Error with no skull (average face)", fmt(o.baseline_rmse) + " mm"],
+      ["Average certainty of the face", "± " + fmt(hw.reduce((a, b) => a + b, 0) / hw.length) + " mm"], ["Occlusion pattern", o.pattern], ["Points received", String(o.n_points)]];
     $("readout").innerHTML = rows.map((r) => "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>").join("");
     document.querySelectorAll("#sev button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.sev === state.sev));
   }
-  function update() {
-    const o = SK.observations[state.sev], p = posFor(o);
-    ["A", "B"].forEach((w) => {
-      const id = "plot" + w, isB = w === "B";
-      Plotly.restyle(id, { x: [col(p, 0)], y: [col(p, 1)], z: [col(p, 2)], intensity: [isB ? valsB(o) : o.err.map(() => 0)], text: [hover(o)], opacity: state.op / 100 }, [1]);
-      Plotly.restyle(id, { intensity: [o.vis.map((v) => 1 - v)] }, [0]);
-      Plotly.restyle(id, { x: [col(o.points, 0)], y: [col(o.points, 1)], z: [col(o.points, 2)], visible: $("c-pts").checked }, [2]);
-    });
-    readout();
-  }
-  function labelSev() { if (!SK) return; document.querySelectorAll("#sev button").forEach((b) => { const o = SK.observations[b.dataset.sev]; b.innerHTML = fmt(o.missing_fraction * 100, 0) + " % hidden<small>" + b.dataset.sev + "</small>"; }); }
+  function labelSev() { if (!SK) return; document.querySelectorAll("#sev button").forEach((b) => { const o = SK.observations[b.dataset.sev]; b.innerHTML = fmt(o.missing_fraction * 100, 0) + " % missing<small>" + b.dataset.sev + "</small>"; }); }
   async function loadSkull(id) {
     if (busy) return; busy = true;
-    const k = IDX.skulls.find((s) => s.id === id), stages = [$("plotA").parentElement, $("plotB").parentElement];
+    const k = IDX.skulls.find((s) => s.id === id), stages = IDS.map((d) => $(d).parentElement);
     stages.forEach((st) => { const l = document.createElement("div"); l.className = "loading"; l.textContent = "Loading " + id + " ..."; st.appendChild(l); });
     SK = await (await fetch(k.file)).json();
-    vmax = 1; SEV.forEach((s) => { const o = SK.observations[s]; vmax = Math.max(vmax, ...o.unc, ...o.err); }); vmax = Math.ceil(vmax);
+    vmax = 1; SEV.forEach((s) => { const o = SK.observations[s]; vmax = Math.max(vmax, ...hwOf(o), ...o.err); }); vmax = Math.ceil(vmax);
     const t = SPLIT_TXT[SK.split]; $("splitTag").textContent = t[0]; $("splitTag").className = "tag" + (SK.split === "train" ? " seen" : ""); $("splitNote").textContent = t[1];
     $("nv").textContent = SK.n_model_vertices.toLocaleString("en-US"); $("caseId").textContent = SK.case;
-    await draw(); labelSev(); readout();
+    await draw(); labelSev(); readout(); renderZones();
     document.querySelectorAll(".loading").forEach((l) => l.remove()); busy = false;
   }
   const sevBox = $("sev");
   SEV.forEach((s) => { const b = document.createElement("button"); b.type = "button"; b.dataset.sev = s; b.textContent = s;
-    b.addEventListener("click", () => { state.sev = s; if (SK) update(); }); sevBox.appendChild(b); });
+    b.addEventListener("click", async () => { state.sev = s; if (SK) { await draw(); readout(); renderZones(); } }); sevBox.appendChild(b); });
   sel.addEventListener("change", () => loadSkull(sel.value));
-  $("op").addEventListener("input", (e) => { state.op = +e.target.value; if (SK) update(); });
-  $("grow").addEventListener("input", (e) => { state.grow = +e.target.value; if (SK) update(); });
-  $("c-pts").addEventListener("change", () => SK && update());
-  function setMode(m) { state.mode = m; $("m-unc").classList.toggle("on", m === "unc"); $("m-err").classList.toggle("on", m === "err");
-    $("m-unc").setAttribute("aria-pressed", m === "unc"); $("m-err").setAttribute("aria-pressed", m === "err");
-    $("capB").textContent = m === "unc" ? "Where the model is unsure" : "Where the model is actually wrong"; if (SK) update(); }
-  $("m-unc").addEventListener("click", () => setMode("unc")); $("m-err").addEventListener("click", () => setMode("err"));
+  $("thr").addEventListener("input", (e) => { state.thr = +e.target.value; if (SK) { readout(); if (state.mode === "cert") draw(["plotCert"]); } });
+  $("c-pts").addEventListener("change", () => SK && draw(["plotSkull"]));
+  function setMode(m) { state.mode = m; $("m-cert").classList.toggle("on", m === "cert"); $("m-err").classList.toggle("on", m === "err");
+    $("m-cert").setAttribute("aria-pressed", m === "cert"); $("m-err").setAttribute("aria-pressed", m === "err");
+    $("capC").textContent = m === "cert" ? "3 · Where the face is certain" : "3 · Where the face is actually wrong"; if (SK) draw(["plotCert"]); }
+  $("m-cert").addEventListener("click", () => setMode("cert")); $("m-err").addEventListener("click", () => setMode("err"));
   document.querySelectorAll("[data-cam]").forEach((b) => b.addEventListener("click", () => {
     document.querySelectorAll("[data-cam]").forEach((x) => x.classList.toggle("on", x === b)); state.cam = b.dataset.cam;
-    Plotly.relayout("plotA", { "scene.camera": camObj() }); }));
-  $("play").addEventListener("click", () => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { state.grow = 100; $("grow").value = 100; update(); return; }
-    const t0 = performance.now(), dur = 2600;
-    (function step(now) { const u = Math.min(1, (now - t0) / dur), e = u * u * (3 - 2 * u); state.grow = Math.round(100 * e); $("grow").value = state.grow; update(); if (u < 1) requestAnimationFrame(step); })(t0);
-  });
+    Plotly.relayout("plotFace", { "scene.camera": camObj() }); }));
   const first = IDX.skulls.find((k) => k.split === "test") || IDX.skulls[0];
   sel.value = first.id; await loadSkull(first.id);
 
@@ -307,8 +350,10 @@ figcaption { position: absolute; z-index: 2; top: 10px; left: 12px; color: #fff;
       return "<tr><td>" + fmt(c.nominal * 100, 0) + " %</td><td>" + fmt(c.raw * 100, 1) + " %</td><td>" + fmt(c.calibrated * 100, 1) + " %</td><td>" + fmt(c.raw_simultaneous * 100, 1) + " %</td></tr>"; }).join("");
     $("covTable").innerHTML = "<tr><th>Promised coverage</th><th>Raw model</th><th>After calibration</th><th>Whole face inside (raw)</th></tr>" + rows;
     $("covNote").textContent = "Coverage is the share of true face coordinates that fall inside the predicted interval. A 90 percent interval should contain about 90 percent. Calibration is fitted on separate skulls and never sees the test skulls. The last column asks for every point of a face to be inside at once, which is much stricter and is not what the other columns measure. " +
-      (M.pooled_spearman_err_vs_std != null ? "Across all test faces, where the model says it is unsure and where it is actually wrong agree only weakly (rank correlation " + fmt(M.pooled_spearman_err_vs_std, 2) + ")." : "");
+      (M.pooled_spearman_err_vs_std != null ? "Across all test faces, where the model says it is unsure and where it is actually wrong agree moderately (rank correlation " + fmt(M.pooled_spearman_err_vs_std, 2) + ")." : "");
   }
   $("smallN").textContent = C ? ("This run uses " + C.independent_base_geometries + " real skulls in total: " + C.base_per_split.train + " for training, " + C.base_per_split.validation + " for choosing the model, " + C.base_per_split.calibration + " for calibration and " + C.base_per_split.test + " for testing. Held-out sets this small give wide uncertainty on every number here.") : "The number of skulls is small, so every number here is uncertain.";
 })();
 </script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+{
+  "run": "face_v3_pn",
+  "n_test": 48,
+  "q90": 1.382863998413086,
+  "corr_mm": 12.0,
+  "k": 4,
+  "split": "test",
+  "zones": [
+    {
+      "zone": "forehead",
+      "n_vertices": 714,
+      "mean_halfwidth_mm": 4.0320844650268555,
+      "mean_error_mm": 3.3379080295562744
+    },
+    {
+      "zone": "eyes",
+      "n_vertices": 299,
+      "mean_halfwidth_mm": 5.002203464508057,
+      "mean_error_mm": 4.20688009262085
+    },
+    {
+      "zone": "nose",
+      "n_vertices": 106,
+      "mean_halfwidth_mm": 5.446267127990723,
+      "mean_error_mm": 4.742568016052246
+    },
+    {
+      "zone": "cheeks",
+      "n_vertices": 275,
+      "mean_halfwidth_mm": 5.837749004364014,
+      "mean_error_mm": 4.86114501953125
+    },
+    {
+      "zone": "mouth",
+      "n_vertices": 290,
+      "mean_halfwidth_mm": 6.741580963134766,
+      "mean_error_mm": 6.600566864013672
+    },
+    {
+      "zone": "chin and jaw",
+      "n_vertices": 411,
+      "mean_halfwidth_mm": 6.7586822509765625,
+      "mean_error_mm": 7.2546610832214355
+    }
+  ],
+  "zone_rank_spearman_halfwidth_vs_error": 1.0,
+  "vertex_spearman_halfwidth_vs_error": 0.5341975535308559,
+  "error_in_25pct_most_certain_mm": 2.8185617923736572,
+  "error_in_25pct_least_certain_mm": 7.597390651702881,
+  "error_all_mm": 4.95297384262085,
+  "coverage_per_coordinate_inside_halfwidth": 0.9074449748077433,
+  "coverage_note": "share of true face coordinates (x, y, z) within +- the displayed half-width; nominal 0.90; fitted on the calibration split only",
+  "samples": {
+    "mean_prediction_rmse_mm": 5.864115238189697,
+    "mean_sample_rmse_mm": 8.371837745075466,
+    "best_of_k_rmse_mm": 7.46641415125787,
+    "note": "best-of-K is oracle-selected using the true face; NOT a single-prediction result"
+  }
+}

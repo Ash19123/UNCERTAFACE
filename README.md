@@ -30,7 +30,7 @@ reconstruction and uncertainty quality.
   Known failures, reported in `reports/FINDINGS.md`: under 6-10% affine deformation of the input skull the error rises to 9-13 mm while the predicted
   uncertainty barely moves (coverage falls to 60-80%); best-of-N sampling is worse than the single prediction; absolute error is higher than in the
   earlier face-v2 run (not directly comparable). Evaluation settings live in `configs/evaluation.yaml`.
-  `scripts/face_from_any_skull.py` makes a face and per-point uncertainty for any skull mesh; `scripts/make_demo_site.py` builds the demo.
+  `scripts/face_from_any_skull.py` takes a broken skull and writes the most likely face, four plausible faces and the face regions ranked by certainty (see `docs/BROKEN_SKULL.md`); `scripts/make_demo_site.py` builds the demo.
 - **Earlier results** (`reports/archive_v1_ellipsoid/`) come from a first version whose "skull" was a smooth egg-shaped procedural shell. They are kept
   for the record and are **not comparable** with the real-skull setup. On that toy world the model improved on a no-skull baseline
   (3.19 vs 4.17 mm vertex RMSE; irreducible floor 1.62 mm) with informative but imperfect uncertainty, and intervals needed conformal calibration.
