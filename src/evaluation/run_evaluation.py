@@ -30,7 +30,13 @@ from . import stress_tests as st
 from . import uncertainty_metrics as um
 from .predict import collect
 
-LEVELS = (0.5, 0.8, 0.9, 0.95)
+def _eval_cfg(path="configs/evaluation.yaml") -> dict:
+    p = Path(path)
+    return yaml.safe_load(p.read_text()) if p.exists() else {}
+
+
+_EC = _eval_cfg()
+LEVELS = tuple(_EC.get("confidence_levels", (0.5, 0.8, 0.9, 0.95)))
 
 
 def _jsonable(o):
@@ -110,7 +116,7 @@ def evaluate_run(run_dir, out_dir=None, eval_split="test", device="cpu", sweeps=
         sc = sp.sparsification_curves(err, unc)
         res["sparsification"] = {k: v for k, v in sc.items() if not isinstance(v, np.ndarray)}
         res["risk_coverage"] = sp.risk_coverage(err, unc)
-        res["best_of_n"] = sp.best_of_n(m, s, y, 10)
+        res["best_of_n"] = sp.best_of_n(m, s, y, int(_EC.get("best_of_n_samples", 10)))
         res["best_of_n"]["note"] = "oracle-selected using ground truth; NOT a single-prediction result"
         uv.reliability_plot(rel, out_dir / "reliability.png")
         uv.sparsification_plot(sc, out_dir / "sparsification.png", run_dir.name)
@@ -120,14 +126,15 @@ def evaluate_run(run_dir, out_dir=None, eval_split="test", device="cpu", sweeps=
 
     tables = {"severity": st.group_table(test_p, "severity"), "pattern": st.group_table(test_p, "pattern"),
               "n_points": st.group_table(test_p, "n_points"), "sampler": st.group_table(test_p, "sampler"),
-              "noise_mm": st.group_table(test_p, "noise_sigma_mm", [0, 0.5, 1.0, 1.51])}
+              "noise_mm": st.group_table(test_p, "noise_sigma_mm", _EC.get("grouped_noise_bins_mm", [0, 0.5, 1.0, 1.51]))}
     res["stress_grouped"] = tables
     if sweeps:
         dcfg = yaml.safe_load(Path(dataset_cfg_path).read_text())
         bases = sorted(set(test_p["base_id"].tolist()))[:n_sweep_bases]
         sw = {}
-        for factor, values in dict(noise=[0.0, 0.5, 1.0, 2.0, 3.0], density=[256, 512, 1024, 2048, 4096],
-                                   sampler=["area", "fps"], deformation=[0.0, 0.03, 0.06, 0.10]).items():
+        for factor, values in {k: _EC.get("controlled_sweeps", {}).get({"noise": "noise_mm"}.get(k, k), v) for k, v in dict(
+                noise=[0.0, 0.5, 1.0, 2.0, 3.0], density=[256, 512, 1024, 2048, 4096],
+                sampler=["area", "fps"], deformation=[0.0, 0.03, 0.06, 0.10]).items()}.items():
             sw[factor] = st.controlled_sweep(model, norm, cfg, root, bases, factor, values, dcfg, cfg["data"]["knn_k"], device)
         sw["missingness"] = st.controlled_sweep(
             model, norm, cfg, root, bases, "missingness",

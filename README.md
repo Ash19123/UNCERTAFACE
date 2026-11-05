@@ -27,6 +27,9 @@ reconstruction and uncertainty quality.
   between the two is not established; the PointNet choice followed validation error and a 60-epoch ablation. Raw 90% intervals cover 95-96%, conformal
   calibration gives 91%. A 3-seed ensemble adds little (epistemic share of variance about 5%). These are errors against *synthetic* faces built
   from assumed anatomy; they say nothing about accuracy on real faces. Not a forensic or identification tool.
+  Known failures, reported in `reports/FINDINGS.md`: under 6-10% affine deformation of the input skull the error rises to 9-13 mm while the predicted
+  uncertainty barely moves (coverage falls to 60-80%); best-of-N sampling is worse than the single prediction; absolute error is higher than in the
+  earlier face-v2 run (not directly comparable). Evaluation settings live in `configs/evaluation.yaml`.
   `scripts/face_from_any_skull.py` makes a face and per-point uncertainty for any skull mesh; `scripts/make_demo_site.py` builds the demo.
 - **Earlier results** (`reports/archive_v1_ellipsoid/`) come from a first version whose "skull" was a smooth egg-shaped procedural shell. They are kept
   for the record and are **not comparable** with the real-skull setup. On that toy world the model improved on a no-skull baseline

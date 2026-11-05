@@ -27,10 +27,11 @@ def _md(rows, cols, fmt="{:.2f}"):
 
 def build_report(main: str, ensemble: str | None = None, reports="reports", data_root="UNCERTAFACE_DATA_REAL") -> str:
     R = Path(reports)
-    L = ["# UNCERTAFACE results (SYNTHETIC data only)", "",
-         "> Every number below is read from saved JSON produced by the code in this repository. Results are for a "
-         "procedurally generated synthetic skull-face task; they say nothing about real human anatomy, forensic "
-         "validity or identification. All distances/uncertainties are in millimetres.", ""]
+    L = ["# UNCERTAFACE results (real skulls, SYNTHETIC faces)", "",
+         "> Every number below is read from saved JSON produced by the code in this repository. Skulls are real "
+         "(MUG500+, CC BY 4.0); the face attached to each is SYNTHETIC (an assumed soft-tissue rule). Errors are "
+         "measured against that synthetic face, so they say nothing about real faces, forensic validity or identification. "
+         "All distances/uncertainties are in millimetres.", ""]
     d = _load(Path(data_root) / "dataset_report.json")
     if d:
         c = d["counts"]
