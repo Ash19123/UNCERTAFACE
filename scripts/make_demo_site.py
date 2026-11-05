@@ -44,26 +44,24 @@ def load_json(p):
 
 
 def make_upsampler(q: np.ndarray, scale: float, step: float = 2.25):
-    """Display-only: C1 cubic interpolation of per-vertex fields of the 3 mm face grid onto a finer regular grid
-    clipped to a smooth oval (outline vertices snapped onto it). Returns ``(up, faces)``."""
+    """Display-only: C1 cubic interpolation of per-vertex fields of the 3 mm face grid onto a finer mesh. Interior points are
+    a regular grid, the outline is a ring of points exactly on a smooth oval, and the triangulation is Delaunay (the oval is
+    convex), so the edge is smooth instead of stair-stepped. Returns ``(up, faces)``."""
     from scipy.interpolate import CloughTocher2DInterpolator
-    from src.data import face_from_skull as ffs
+    from scipy.spatial import Delaunay
+    probe = CloughTocher2DInterpolator(q, np.zeros(len(q)))
+    cz, ax, az = -48.0, 70.0, 86.0
+    ring_k, in_k = 0.93, 0.895
     xs = np.arange(q[:, 0].min(), q[:, 0].max() + 1e-6, step)
     zs = np.arange(q[:, 1].max(), q[:, 1].min() - 1e-6, -step)
     X, Z = np.meshgrid(xs, zs, indexing="xy")
-    probe = CloughTocher2DInterpolator(q, np.zeros(len(q)))
-    mask = ffs.oval_mask(X * scale, Z * scale) & np.isfinite(probe(X, Z))
-    q2 = np.stack([X[mask], Z[mask]], 1)
-    faces = ffs.grid_triangles(mask)
-    pad = np.pad(mask, 1)
-    edge = (mask & ~(pad[:-2, 1:-1] & pad[2:, 1:-1] & pad[1:-1, :-2] & pad[1:-1, 2:]))[mask]
-    cz, ax, az = -48.0, 70.0 * 0.985, 86.0 * 0.985
-    rx, rz = q2[edge, 0] * scale, q2[edge, 1] * scale - cz
-    r = np.sqrt((rx / ax) ** 2 + (rz / az) ** 2)
-    moved = q2.copy()
-    moved[edge, 0], moved[edge, 1] = rx / r / scale, (rz / r + cz) / scale
-    ok = np.isfinite(probe(moved[:, 0], moved[:, 1]))
-    q2 = np.where(ok[:, None], moved, q2)
+    inner = ((X * scale / ax) ** 2 + ((Z * scale - cz) / az) ** 2 <= in_k ** 2) & np.isfinite(probe(X, Z))
+    perim = 2 * np.pi * np.sqrt((ax ** 2 + az ** 2) / 2) * ring_k
+    t = np.linspace(0, 2 * np.pi, int(perim / (step * scale)), endpoint=False)
+    ring = np.stack([ring_k * ax * np.cos(t) / scale, (cz + ring_k * az * np.sin(t)) / scale], 1)
+    ring = ring[np.isfinite(probe(ring[:, 0], ring[:, 1]))]
+    q2 = np.concatenate([np.stack([X[inner], Z[inner]], 1), ring])
+    faces = Delaunay(q2).simplices
 
     def up(vals):
         return CloughTocher2DInterpolator(q, np.asarray(vals, float))(q2)
