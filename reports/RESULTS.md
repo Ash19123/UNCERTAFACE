@@ -149,6 +149,12 @@ Pointwise = fraction of coordinates inside their interval (marginal). Simultaneo
 | extreme-lateral | 6 | 7.05 | 7.51 | 0.94 |
 | extreme-region | 6 | 6.66 | 7.51 | 0.94 |
 
+### Uncertainty of the headline numbers (bootstrap over 6 test skulls, 10000 draws, 95% interval)
+- model vertex RMSE 5.86 mm [5.38, 6.35]; mean-face baseline 8.11 mm [7.21, 9.08]
+- gain over the baseline 27.7% [13.8%, 37.2%]; model better in 99.98% of draws
+- calibrated 90% coverage 0.910 [0.889, 0.936]
+- skulls are resampled, not views; with this few skulls the intervals are wide and should be read as a range, not a precise error bar
+
 ### Which face regions are most certain (test split)
 | region | mean_halfwidth_mm | mean_error_mm |
 |---|---|---|

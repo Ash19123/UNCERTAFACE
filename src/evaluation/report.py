@@ -93,6 +93,15 @@ def build_report(main: str, ensemble: str | None = None, reports="reports", data
         L += [f"### Test-set breakdown by {name}", _md(rows, [c for c in ("group", "n", "rmse_mm", "mean_pos_std_mm", "cov90_raw") if c in rows[0]]), ""]
     for name, rows in r.get("stress_controlled", {}).items():
         L += [f"### Controlled sweep: {name}", _md(rows, [c for c in ("group", "n", "rmse_mm", "mean_pos_std_mm", "cov90_raw") if c in rows[0]]), ""]
+    bc = _load(R / "results" / main / "bootstrap_ci.json")
+    if bc:
+        g = bc["relative_gain_over_baseline"]
+        L += [f"### Uncertainty of the headline numbers (bootstrap over {bc['n_test_skulls']} test skulls, {bc['n_boot']} draws, 95% interval)",
+              f"- model vertex RMSE {bc['model_rmse_mm']['estimate']:.2f} mm [{bc['model_rmse_mm']['ci95'][0]:.2f}, {bc['model_rmse_mm']['ci95'][1]:.2f}]; "
+              f"mean-face baseline {bc['baseline_rmse_mm']['estimate']:.2f} mm [{bc['baseline_rmse_mm']['ci95'][0]:.2f}, {bc['baseline_rmse_mm']['ci95'][1]:.2f}]",
+              f"- gain over the baseline {g['estimate']*100:.1f}% [{g['ci95'][0]*100:.1f}%, {g['ci95'][1]*100:.1f}%]; model better in {g['share_of_draws_model_better']*100:.2f}% of draws",
+              f"- calibrated 90% coverage {bc['coverage90_calibrated']['estimate']:.3f} [{bc['coverage90_calibrated']['ci95'][0]:.3f}, {bc['coverage90_calibrated']['ci95'][1]:.3f}]",
+              f"- {bc['note']}", ""]
     z = _load(R / "results" / main / "zone_certainty.json")
     if z:
         L += ["### Which face regions are most certain (test split)",

@@ -31,3 +31,9 @@ reports_v2/
 *.err
 fetch.done
 /final_media/
+notebooks_run.log
+site_build.log
+fulltests*.log
+sweeps_pn.*
+rigor_v3.*
+face_v3_pn.*

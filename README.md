@@ -27,6 +27,8 @@ reconstruction and uncertainty quality.
   between the two is not established; the PointNet choice followed validation error and a 60-epoch ablation. Raw 90% intervals cover 95-96%, conformal
   calibration gives 91%. A 3-seed ensemble adds little (epistemic share of variance about 5%). These are errors against *synthetic* faces built
   from assumed anatomy; they say nothing about accuracy on real faces. Not a forensic or identification tool.
+  Bootstrap over the 6 test skulls (`scripts/bootstrap_ci.py`): model 5.86 mm [5.38, 6.35] vs mean-face 8.11 mm [7.21, 9.08]; gain 27.7% [13.8%, 37.2%].
+  The nine notebooks in `notebooks/` are executed and ship with outputs (`python scripts/make_notebooks.py --run`).
   Known failures, reported in `reports/FINDINGS.md`: under 6-10% affine deformation of the input skull the error rises to 9-13 mm while the predicted
   uncertainty barely moves (coverage falls to 60-80%); best-of-N sampling is worse than the single prediction; absolute error is higher than in the
   earlier face-v2 run (not directly comparable). Evaluation settings live in `configs/evaluation.yaml`.
